@@ -7,9 +7,9 @@ import { User } from './user.model';
 
 
 
-const getUser = async () => {
-  const result = await User.find()
-  return result
+const getUser = async (email: string) => {
+  const result = await User.findOne({ email });
+  return result;
 }
 
 const getSingleUser = async (id: string) => {
@@ -18,7 +18,7 @@ const getSingleUser = async (id: string) => {
   return result
 }
 
-const updateUser = async (id: string, data: IUser) => {
+const updateUser = async (id: string, data: Partial<IUser>) => {
   const result = await User.findByIdAndUpdate(id, data, {
     new: true,
   })

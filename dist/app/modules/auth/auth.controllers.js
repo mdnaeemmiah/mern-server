@@ -27,26 +27,25 @@ exports.AuthControllers = void 0;
 const http_status_codes_1 = require("http-status-codes");
 const auth_service_1 = require("./auth.service");
 const config_1 = __importDefault(require("../../config"));
-const user_model_1 = require("../user/user.model");
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
 const register = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield auth_service_1.AuthService.register(req.body);
-    const { name, email, role, password } = req.body;
-    // Default role is 'user', can be 'admin' if specified
-    const newUserRole = role === 'admin' ? 'admin' : 'user';
-    const newUser = new user_model_1.User({
-        name,
-        email,
-        password,
-        role: newUserRole, // Set the role during registration
-    });
-    yield newUser.save();
     (0, sendResponse_1.default)(res, {
-        statusCode: http_status_codes_1.StatusCodes.ACCEPTED,
+        statusCode: http_status_codes_1.StatusCodes.CREATED,
         success: true,
-        message: "User Registered in successfully",
-        data: result
+        message: 'User registered successfully. Please check your email to verify your account.',
+        data: result,
+    });
+}));
+const verifyEmail = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, verificationCode } = req.body;
+    const result = yield auth_service_1.AuthService.verifyEmail(email, verificationCode);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: 'Email verified successfully',
+        data: result,
     });
 }));
 const login = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -59,13 +58,13 @@ const login = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, 
         maxAge: 1000 * 60 * 60 * 24 * 365,
     });
     (0, sendResponse_1.default)(res, {
-        statusCode: http_status_codes_1.StatusCodes.ACCEPTED,
+        statusCode: http_status_codes_1.StatusCodes.OK,
         success: true,
-        message: "User logged in successfully",
+        message: 'User logged in successfully',
         data: {
             accessToken,
             needsPasswordChange,
-        }
+        },
     });
 }));
 const changePassword = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -84,15 +83,45 @@ const refreshToken = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
         success: true,
-        message: 'refreshToken token is retrieved successfully!',
-        data: {
-            result
-        },
+        message: 'Access token is retrieved successfully!',
+        data: result,
+    });
+}));
+const forgetPassword = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email } = req.body;
+    const result = yield auth_service_1.AuthService.forgetPassword(email);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: 'Password reset link sent to your email',
+        data: result,
+    });
+}));
+const resetPassword = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield auth_service_1.AuthService.resetPassword(req.body);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: 'Password reset successfully',
+        data: result,
+    });
+}));
+const codeVerify = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield auth_service_1.AuthService.codeVerify(req.body);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: 'Code verified successfully',
+        data: result,
     });
 }));
 exports.AuthControllers = {
     register,
+    verifyEmail,
     login,
     changePassword,
     refreshToken,
+    forgetPassword,
+    resetPassword,
+    codeVerify,
 };

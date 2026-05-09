@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import { userService } from './user.service';
 import { Request, Response } from 'express';
 import { User } from './user.model';
+import { IUser } from './user.interface';
 import mongoose from 'mongoose';
 import catchAsync from '../../../utils/catchAsync';
 import sendResponse from '../../../utils/sendResponse';
@@ -11,12 +12,13 @@ import AppError from '../../../errors/AppError';
 
 
 const getUser = catchAsync(async (req, res) => {
-  const result = await userService.getUser();
+  const { email } = req.user;
+  const result = await userService.getUser(email);
 
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
-    message: 'Users getting successfully',
+    message: 'User retrieved successfully',
     data: result,
   });
 });
@@ -37,7 +39,12 @@ const getSingleUser = catchAsync(async (req, res) => {
 
 const updateUser = catchAsync(async (req, res) => {
   const {id} = req.params;
-  const body = req.body;
+  const body = req.body as Partial<IUser>;
+
+  const file = (req as Request & { file?: Express.Multer.File }).file;
+  if (file?.filename) {
+    body.profileImage = `/uploads/profile-images/${file.filename}`;
+  }
   const result = await userService.updateUser(id, body);
 
   sendResponse(res, {

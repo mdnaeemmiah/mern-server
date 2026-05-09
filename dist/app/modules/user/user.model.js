@@ -42,6 +42,18 @@ const UserSchema = new mongoose_1.Schema({
         required: true,
         select: 0,
     },
+    verificationCode: {
+        type: String,
+        select: 0,
+    },
+    verificationCodeExpires: {
+        type: Date,
+        select: 0,
+    },
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },
     needsPasswordChange: {
         type: Boolean,
         default: true,
@@ -63,13 +75,23 @@ const UserSchema = new mongoose_1.Schema({
         default: 'in-progress',
     },
     isBlocked: { type: Boolean, default: false },
+    passwordResetToken: {
+        type: String,
+        select: 0,
+    },
+    passwordResetExpires: {
+        type: Date,
+        select: 0,
+    },
 }, { timestamps: true });
 UserSchema.pre('save', function (next) {
     return __awaiter(this, void 0, void 0, function* () {
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         const user = this; // doc
         // hashing password and save into DB
-        user.password = yield bcrypt_1.default.hash(user.password, Number(config_1.default.bcrypt_salt_rounds));
+        if (this.isModified('password') || this.isNew) {
+            user.password = yield bcrypt_1.default.hash(user.password, Number(config_1.default.bcrypt_salt_rounds));
+        }
         next();
     });
 });

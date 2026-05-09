@@ -12,7 +12,12 @@ import { User } from '../app/modules/user/user.model';
 
 const auth = (...requiredRoles: IUserRole[]) => {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.headers.authorization;
+    let token = req.headers.authorization;
+
+    // Check if the token comes with 'Bearer ' prefix and extract it
+    if (token && token.startsWith('Bearer ')) {
+      token = token.split(' ')[1];
+    }
 
     // checking if the token is missing
     if (!token) {

@@ -1,5 +1,10 @@
 
 import mongoose from "mongoose";
+import dns from "dns";
+
+// Fix DNS resolution issues (querySrv ECONNREFUSED) for MongoDB Atlas
+dns.setServers(["8.8.8.8", "1.1.1.1", "8.8.4.4"]);
+
 import { Server } from "http";
 import config from "./app/config";
 import app from "./app";

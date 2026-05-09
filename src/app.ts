@@ -4,6 +4,7 @@ import router from "./routes";
 import globalErrorHandler from "./middlewares/globalErrorHandler";
 import cookieParser from 'cookie-parser';
 import notFound from "./middlewares/NotFound";
+import path from 'path';
 
 
 // express
@@ -13,6 +14,8 @@ const app :Application= express();
 app.use(express.json());
 app.use(cors({origin:true,credentials:true}));
 app.use(cookieParser());
+
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 app.use('/api', router);
 

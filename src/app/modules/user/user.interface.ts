@@ -9,6 +9,7 @@ export interface IUser {
     password: string;
     role: 'user' | 'admin';
     phone?: string;
+    profileImage?: string;
     address?: string;
     city?: string;
     needsPasswordChange: boolean;
