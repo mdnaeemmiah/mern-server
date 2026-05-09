@@ -63,6 +63,14 @@ const UserSchema = new Schema<IUser>(
       default: 'in-progress',
     },
     isBlocked: { type: Boolean, default: false },
+    passwordResetToken: {
+      type: String,
+      select: 0,
+    },
+    passwordResetExpires: {
+      type: Date,
+      select: 0,
+    },
   },
   { timestamps: true }
 );

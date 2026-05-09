@@ -1,5 +1,3 @@
-
-
 import { Model } from "mongoose";
 import { USER_ROLE } from "./user.contant";
 
@@ -16,7 +14,11 @@ export interface IUser {
     needsPasswordChange: boolean;
     passwordChangedAt?: Date;
     status: 'in-progress' | 'blocked';
-    isBlocked: boolean;           
+    isBlocked: boolean;
+    verificationCode?: string;
+    verificationCodeExpires?: Date;
+    passwordResetToken?: string;
+    passwordResetExpires?: Date;
   }
   
 

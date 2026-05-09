@@ -1,7 +1,3 @@
-
-
-
-
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { AuthService } from './auth.service';
@@ -77,10 +73,44 @@ const refreshToken = catchAsync(async (req, res) => {
   });
 });
 
+const forgetPassword = catchAsync(async (req: Request, res: Response) => {
+  const { email } = req.body;
+  const result = await AuthService.forgetPassword(email);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Password reset link sent to your email',
+    data: result,
+  });
+});
+
+const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.resetPassword(req.body);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Password reset successfully',
+    data: result,
+  });
+});
+
+const codeVerify = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.codeVerify(req.body);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Code verified successfully',
+    data: result,
+  });
+});
+
 export const AuthControllers = {
   register,
   verifyEmail,
   login,
   changePassword,
   refreshToken,
+  forgetPassword,
+  resetPassword,
+  codeVerify,
 };

@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 const loginValidationSchema = z.object({
@@ -35,9 +34,45 @@ const refreshTokenValidationSchema = z.object({
   }),
 });
 
+const forgetPasswordValidationSchema = z.object({
+  body: z.object({
+    email: z.string().email(),
+  }),
+});
+
+const resetPasswordValidationSchema = z.object({
+  body: z.object({
+    email: z.string().email(),
+    newPassword: z.string(),
+    code: z.string(),
+  }),
+});
+
+const codeVerifyValidationSchema = z.object({
+  body: z.object({
+    email: z.string().email(),
+    code: z.string(),
+  }),
+});
+
+const registerValidationSchema = z.object({
+  body: z.object({
+    name: z.string(),
+    email: z.string().email(),
+    password: z.string(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    city: z.string().optional(),
+  }),
+});
+
 export const AuthValidation = {
   loginValidationSchema,
   changePasswordValidationSchema,
   refreshTokenValidationSchema,
   verifyEmailValidationSchema,
+  forgetPasswordValidationSchema,
+  resetPasswordValidationSchema,
+  codeVerifyValidationSchema,
+  registerValidationSchema,
 };

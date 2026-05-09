@@ -1,6 +1,3 @@
-
-
-
 import { IUser } from '../user/user.interface'
 import bcrypt from 'bcrypt'
 import jwt, { JwtPayload } from 'jsonwebtoken';
@@ -11,13 +8,13 @@ import { StatusCodes } from 'http-status-codes'
 import { createToken, verifyToken } from './auth.utils'
 import AppError from '../../../errors/AppError';
 
-import { IUser } from '../user/user.interface';
-import { User } from '../user/user.model';
-import config from '../../config';
-import { TLoginUser } from './auth.interface';
-import { StatusCodes } from 'http-status-codes';
-import { createToken } from './auth.utils';
-import AppError from '../../../errors/AppError';
+// import { IUser } from '../user/user.interface';
+// import { User } from '../user/user.model';
+// import config from '../../config';
+// import { TLoginUser } from './auth.interface';
+// import { StatusCodes } from 'http-status-codes';
+// import { createToken } from './auth.utils';
+// import AppError from '../../../errors/AppError';
 import { sendEmail } from '../../utils/sendEmail';
 import crypto from 'crypto';
 
@@ -97,6 +94,10 @@ const login = async (payload: TLoginUser) => {
   if (!user) {
     throw new AppError(StatusCodes.NOT_FOUND, 'This user is not found !');
   }
+
+  if (!user.isVerified) {
+    throw new AppError(StatusCodes.FORBIDDEN, 'Please verify your email first!');
+  }
  
   // checking if the user is blocked
 
@@ -108,11 +109,9 @@ const login = async (payload: TLoginUser) => {
 
   // checking if the password is correct
 
-  // if (!(await User.isPasswordMatched(payload?.password, user?.password)))
+  if (!(await User.isPasswordMatched(payload?.password, user?.password)))
     
-  //   throw new AppError(StatusCodes.FORBIDDEN, 'Password do not matched');
-  //   console.log(payload?.password);
-  //   console.log(user?.password)
+    throw new AppError(StatusCodes.FORBIDDEN, 'Password do not matched');
   // create token and sent to the  client
 
   const jwtPayload = {
@@ -229,10 +228,88 @@ const refreshToken = async (token: string) => {
   };
 };
 
+const forgetPassword = async (email: string) => {
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
+  }
+
+  const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
+  user.passwordResetToken = resetToken;
+  user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  await user.save();
+
+  try {
+    await sendEmail(
+      user.email,
+      'Password Reset',
+      `<p>Your password reset code is: <h1>${resetToken}</h1></p>`,
+    );
+  } catch (error) {
+    throw new AppError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to send password reset email',
+    );
+  }
+
+  return {
+    message: 'Password reset code sent to your email',
+  };
+};
+
+const resetPassword = async (payload: {
+  email: string;
+  code: string;
+  newPassword: any;
+}) => {
+  const { email, code, newPassword } = payload;
+  const user = await User.findOne({
+    email,
+    passwordResetToken: code,
+    passwordResetExpires: { $gt: new Date() },
+  });
+
+  if (!user) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid or expired token');
+  }
+
+  user.password = newPassword;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  user.needsPasswordChange = false;
+  user.passwordChangedAt = new Date();
+  await user.save();
+
+  return {
+    message: 'Password reset successfully',
+  };
+};
+
+const codeVerify = async (payload: { email: string; code: string }) => {
+  const { email, code } = payload;
+  const user = await User.findOne({
+    email,
+    passwordResetToken: code,
+    passwordResetExpires: { $gt: new Date() },
+  });
+
+  if (!user) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid or expired code');
+  }
+
+  return {
+    message: 'Code verified successfully',
+  };
+};
+
 export const AuthService = {
   register,
   login,
   changePassword,
   refreshToken,
-  verifyEmail
-}
+  verifyEmail,
+  forgetPassword,
+  resetPassword,
+  codeVerify,
+};
