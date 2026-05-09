@@ -1,32 +1,43 @@
 
-import { z } from 'zod'
+import { z } from 'zod';
 
 const loginValidationSchema = z.object({
-    body: z.object({
-      email: z.string({
-        required_error: "Email must be provided and must be a string",
-    }).email(),
-      password: z.string({ required_error: 'Password is required' }),
+  body: z.object({
+    email: z
+      .string({
+        required_error: 'Email must be provided and must be a string',
+      })
+      .email(),
+    password: z.string({ required_error: 'Password is required' }),
+  }),
+});
+
+const verifyEmailValidationSchema = z.object({
+  body: z.object({
+    email: z.string().email(),
+    verificationCode: z.string(),
+  }),
+});
+
+const changePasswordValidationSchema = z.object({
+  body: z.object({
+    oldPassword: z.string({
+      required_error: 'Old password is required',
     }),
-  })
-  const changePasswordValidationSchema = z.object({
-    body: z.object({
-      oldPassword: z.string({
-        required_error: 'Old password is required',
-      }),
-      newPassword: z.string({ required_error: 'Password is required' }),
+    newPassword: z.string({ required_error: 'Password is required' }),
+  }),
+});
+const refreshTokenValidationSchema = z.object({
+  cookies: z.object({
+    refreshToken: z.string({
+      required_error: 'Refresh token is required!',
     }),
-  });
-  const refreshTokenValidationSchema = z.object({
-    cookies: z.object({
-      refreshToken: z.string({
-        required_error: 'Refresh token is required!',
-      }),
-    }),
-  });
-  
-  export const AuthValidation = {
-    loginValidationSchema,
-    changePasswordValidationSchema,
-    refreshTokenValidationSchema,
-  }
+  }),
+});
+
+export const AuthValidation = {
+  loginValidationSchema,
+  changePasswordValidationSchema,
+  refreshTokenValidationSchema,
+  verifyEmailValidationSchema,
+};

@@ -11,33 +11,84 @@ import { StatusCodes } from 'http-status-codes'
 import { createToken, verifyToken } from './auth.utils'
 import AppError from '../../../errors/AppError';
 
+import { IUser } from '../user/user.interface';
+import { User } from '../user/user.model';
+import config from '../../config';
+import { TLoginUser } from './auth.interface';
+import { StatusCodes } from 'http-status-codes';
+import { createToken } from './auth.utils';
+import AppError from '../../../errors/AppError';
+import { sendEmail } from '../../utils/sendEmail';
+import crypto from 'crypto';
+
 const register = async (payload: IUser) => {
-  const user = new User(payload);
-  console.log(user);
-  
-  const jwtPayload = {
-    role: user.role,  
-    email: user.email,  // Assuming email is unique and used as the user identifier
-  };
+  // checking if the user is exist
+  const user = await User.isUserExistsByCustomId(payload.email);
 
-  const accessToken = createToken(
-    jwtPayload,
-    config.jwt_access_secret as string,
-    config.jwt_access_expires_in as string,
-  );
+  if (user) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'This user is already exist!');
+  }
 
-  const refreshToken = createToken(
-    jwtPayload,
-    config.jwt_refresh_secret as string,
-    config.jwt_refresh_expires_in as string,
-  );
+  // generate verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  payload.verificationCode = verificationCode;
+  payload.verificationCodeExpires = verificationCodeExpires;
+
+  const newUser = new User(payload);
+  await newUser.save();
+
+  try {
+    await sendEmail(
+      newUser.email,
+      'Verify your email',
+      `<p>Your verification code is: <h1>${verificationCode}</h1></p>`,
+    );
+  } catch (error) {
+    throw new AppError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to send verification email',
+    );
+  }
 
   return {
-    accessToken,
-    refreshToken,
-    needsPasswordChange: user?.needsPasswordChange,
+    message: 'Please check your email to verify your account.',
   };
-}
+};
+
+const verifyEmail = async (email: string, verificationCode: string) => {
+  const user = await User.findOne({ email }).select(
+    '+verificationCode +verificationCodeExpires',
+  );
+
+  if (!user) {
+    throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
+  }
+
+  if (
+    !user.verificationCode ||
+    user.verificationCode !== verificationCode
+  ) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid verification code');
+  }
+
+  if (
+    !user.verificationCodeExpires ||
+    user.verificationCodeExpires < new Date()
+  ) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'Verification code has expired');
+  }
+
+  user.isVerified = true;
+  user.verificationCode = undefined;
+  user.verificationCodeExpires = undefined;
+  await user.save();
+
+  return {
+    message: 'Email verified successfully',
+  };
+};
 
 const login = async (payload: TLoginUser) => {
   // checking if the user is exist
@@ -182,5 +233,6 @@ export const AuthService = {
   register,
   login,
   changePassword,
-  refreshToken
+  refreshToken,
+  verifyEmail
 }

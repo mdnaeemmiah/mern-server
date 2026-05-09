@@ -1,25 +1,41 @@
 
 
-import { Router } from "express";
-import { UserValidation } from "../user/user.validation";
-import { AuthControllers } from "./auth.controllers";
-import { AuthValidation } from "./auth.validation";
-import validateRequest from "../../../middlewares/validateRequest";
-
+import { Router } from 'express';
+import { UserValidation } from '../user/user.validation';
+import { AuthControllers } from './auth.controllers';
+import { AuthValidation } from './auth.validation';
+import validateRequest from '../../../middlewares/validateRequest';
 
 const authRouter = Router();
 
-authRouter.post('/register', validateRequest(UserValidation.UserValidationSchema), AuthControllers.register);
-authRouter.post('/login', validateRequest(AuthValidation.loginValidationSchema), AuthControllers.login);
 authRouter.post(
-    '/change-password',
-    validateRequest(AuthValidation.changePasswordValidationSchema),
-    AuthControllers.changePassword,
-  );
+  '/register',
+  validateRequest(UserValidation.UserValidationSchema),
+  AuthControllers.register,
+);
+
 authRouter.post(
-    '/refresh-token',
-    validateRequest(AuthValidation.refreshTokenValidationSchema),
-    AuthControllers.refreshToken,
-  );
+  '/verify-email',
+  validateRequest(AuthValidation.verifyEmailValidationSchema),
+  AuthControllers.verifyEmail,
+);
+
+authRouter.post(
+  '/login',
+  validateRequest(AuthValidation.loginValidationSchema),
+  AuthControllers.login,
+);
+
+authRouter.post(
+  '/change-password',
+  validateRequest(AuthValidation.changePasswordValidationSchema),
+  AuthControllers.changePassword,
+);
+
+authRouter.post(
+  '/refresh-token',
+  validateRequest(AuthValidation.refreshTokenValidationSchema),
+  AuthControllers.refreshToken,
+);
 
 export default authRouter;
