@@ -3,6 +3,7 @@ import authRouter from '../app/modules/auth/auth.route';
 import userRouter from '../app/modules/user/user.route';
 import taskRoute from '../app/modules/task/task.route';
 import vehicleRoute from '../app/modules/vehicle/vehicle.route';
+import documentsRoute from '../app/modules/documents/documents.route';
 
 
 
@@ -24,6 +25,10 @@ const moduleRoutes = [
     {
       path: '/vehicle',
       route: vehicleRoute,
+    },
+    {
+      path: '/documents',
+      route: documentsRoute,
     },
 ];
 
