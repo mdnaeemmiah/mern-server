@@ -15,10 +15,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const catchAsync_1 = __importDefault(require("../utils/catchAsync"));
 const validateRequest = (schema) => {
     return (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-        yield schema.parseAsync({
+        const parsed = yield schema.parseAsync({
             body: req.body,
             cookies: req.cookies,
         });
+        // If schema validates and returns a parsed `body`, replace req.body with it
+        if (parsed && typeof parsed === 'object' && 'body' in parsed) {
+            // @ts-ignore
+            req.body = parsed.body;
+        }
         next();
     }));
 };

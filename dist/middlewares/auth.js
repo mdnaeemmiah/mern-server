@@ -37,7 +37,8 @@ const auth = (...requiredRoles) => {
         if (!user) {
             throw new AppError_1.default(http_status_1.default.NOT_FOUND, "This user is not found !");
         }
-        if (requiredRoles && !requiredRoles.includes(role)) {
+        // Only enforce role checks when roles were provided to the middleware
+        if (requiredRoles && requiredRoles.length > 0 && !requiredRoles.includes(role)) {
             throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, "You are not authorized  hi!");
         }
         req.user = user;

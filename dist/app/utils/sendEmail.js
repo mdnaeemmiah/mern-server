@@ -26,7 +26,7 @@ const sendEmail = (to, subject, html) => __awaiter(void 0, void 0, void 0, funct
         },
     });
     yield transporter.sendMail({
-        from: 'Your App <your-email@example.com>',
+        from: 'Your App <stanaeem25@gmail.com>',
         to,
         subject,
         html,
