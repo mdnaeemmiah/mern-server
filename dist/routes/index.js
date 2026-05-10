@@ -9,6 +9,7 @@ const user_route_1 = __importDefault(require("../app/modules/user/user.route"));
 const task_route_1 = __importDefault(require("../app/modules/task/task.route"));
 const vehicle_route_1 = __importDefault(require("../app/modules/vehicle/vehicle.route"));
 const documents_route_1 = __importDefault(require("../app/modules/documents/documents.route"));
+const cost_route_1 = __importDefault(require("../app/modules/cost/cost.route"));
 const router = (0, express_1.Router)();
 const moduleRoutes = [
     {
@@ -30,6 +31,10 @@ const moduleRoutes = [
     {
         path: '/documents',
         route: documents_route_1.default,
+    },
+    {
+        path: '/cost',
+        route: cost_route_1.default,
     },
 ];
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
