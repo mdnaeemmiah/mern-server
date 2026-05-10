@@ -39,7 +39,8 @@ const auth = (...requiredRoles: IUserRole[]) => {
       throw new AppError(httpStatus.NOT_FOUND, "This user is not found !");
     }
 
-    if (requiredRoles && !requiredRoles.includes(role)) {
+    // Only enforce role checks when roles were provided to the middleware
+    if (requiredRoles && requiredRoles.length > 0 && !requiredRoles.includes(role)) {
       throw new AppError(
         httpStatus.UNAUTHORIZED,
         "You are not authorized  hi!"

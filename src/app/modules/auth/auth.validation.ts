@@ -60,6 +60,13 @@ const registerValidationSchema = z.object({
     name: z.string(),
     email: z.string().email(),
     password: z.string(),
+    dateOfBirth: z
+      .string()
+      .default("")
+      .refine(
+        (value) => value === "" || !Number.isNaN(Date.parse(value)),
+        { message: 'dateOfBirth must be a valid date string or empty' },
+      ),
     phone: z.string().optional(),
     address: z.string().optional(),
     city: z.string().optional(),

@@ -20,7 +20,11 @@ const config_1 = __importDefault(require("../app/config"));
 const user_model_1 = require("../app/modules/user/user.model");
 const auth = (...requiredRoles) => {
     return (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-        const token = req.headers.authorization;
+        let token = req.headers.authorization;
+        // Check if the token comes with 'Bearer ' prefix and extract it
+        if (token && token.startsWith('Bearer ')) {
+            token = token.split(' ')[1];
+        }
         // checking if the token is missing
         if (!token) {
             throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, "You are not authorized!");

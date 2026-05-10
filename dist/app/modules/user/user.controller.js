@@ -21,11 +21,12 @@ const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
 const AppError_1 = __importDefault(require("../../../errors/AppError"));
 const getUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield user_service_1.userService.getUser();
+    const { email } = req.user;
+    const result = yield user_service_1.userService.getUser(email);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
         success: true,
-        message: 'Users getting successfully',
+        message: 'User retrieved successfully',
         data: result,
     });
 }));
@@ -43,6 +44,10 @@ const getSingleUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 const updateUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const body = req.body;
+    const file = req.file;
+    if (file === null || file === void 0 ? void 0 : file.filename) {
+        body.profileImage = `/uploads/profile-images/${file.filename}`;
+    }
     const result = yield user_service_1.userService.updateUser(id, body);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,

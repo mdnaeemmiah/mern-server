@@ -13,6 +13,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
+const dns_1 = __importDefault(require("dns"));
+// Fix DNS resolution issues (querySrv ECONNREFUSED) for MongoDB Atlas
+dns_1.default.setServers(["8.8.8.8", "1.1.1.1", "8.8.4.4"]);
 const config_1 = __importDefault(require("./app/config"));
 const app_1 = __importDefault(require("./app"));
 let server;

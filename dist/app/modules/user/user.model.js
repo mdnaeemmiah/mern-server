@@ -66,6 +66,7 @@ const UserSchema = new mongoose_1.Schema({
         enum: ['user', 'admin'], // Only 'user' or 'admin' roles are allowed
         default: 'user', // Default to 'user'
     },
+    profileImage: { type: String },
     phone: { type: String, default: "N/A" },
     address: { type: String, default: "N/A" },
     city: { type: String, default: "N/A" },

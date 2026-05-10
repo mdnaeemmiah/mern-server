@@ -14,6 +14,13 @@ export const UserValidationSchema = z.object({
       .string()
       .min(8, { message: 'Password must be at least 8 characters long' }),
     role: z.enum(['admin', 'user']).default('user'),
+    dateOfBirth: z
+      .string()
+      .default("")
+      .refine(
+        (value) => value === "" || !Number.isNaN(Date.parse(value)),
+        { message: 'dateOfBirth must be a valid date string or empty' },
+      ),
     isBlocked: z.boolean().default(false),
   }),
 });
