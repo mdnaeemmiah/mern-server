@@ -7,7 +7,12 @@ import { User } from './user.model';
 
 
 
-const getUser = async (email: string) => {
+const getUser = async () => {
+  const result = await User.find();
+  return result;
+}
+
+const getMe = async (email: string) => {
   const result = await User.findOne({ email });
   return result;
 }
@@ -41,6 +46,7 @@ const changeStatus = async (id: string, payload: { status: string }) => {
 
 export const userService = {
   getUser,
+  getMe,
   getSingleUser,
   updateUser,
   deleteUser,

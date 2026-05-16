@@ -12,8 +12,19 @@ import AppError from '../../../errors/AppError';
 
 
 const getUser = catchAsync(async (req, res) => {
+  const result = await userService.getUser();
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Users retrieved successfully',
+    data: result,
+  });
+});
+
+const getMe = catchAsync(async (req, res) => {
   const { email } = req.user;
-  const result = await userService.getUser(email);
+  const result = await userService.getMe(email);
 
   sendResponse(res, {
     statusCode: StatusCodes.OK,
@@ -105,6 +116,7 @@ export const changeStatus = catchAsync(async (req: Request, res: Response) => {
 
 export const userController = {
   getUser,
+  getMe,
   getSingleUser,
   updateUser,
   deleteUser,

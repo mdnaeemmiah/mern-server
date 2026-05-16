@@ -15,6 +15,7 @@ const userRouter = Router()
 
 const maybeUploadProfileImage = upload.single('profileImage')
 
+userRouter.get('/me', auth(USER_ROLE.admin, USER_ROLE.user), userController.getMe)
 userRouter.get('/:userId', userController.getSingleUser)
 userRouter.patch(
   '/:id',
