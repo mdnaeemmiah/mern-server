@@ -3,10 +3,10 @@ import { z } from 'zod';
 export const VehicleValidationSchema = z.object({
 	body: z.object({
 		type: z.string().trim().pipe(z.enum(['car', 'van', 'bike', 'hgv'])),
-		registration: z.string().trim(),
-		make: z.string().trim(),
-		model: z.string().trim(),
-		year: z.coerce.number().int(),
+		registration: z.string().trim().optional(),
+		make: z.string().trim().optional(),
+		model: z.string().trim().optional(),
+		year: z.coerce.number().int().optional(),
 		motExpiry: z.string().trim().optional(),
 		roadTaxExpiry: z.string().trim().optional(),
 		insuranceExpiry: z.string().trim().optional(),

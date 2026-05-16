@@ -22,13 +22,14 @@ vehicleRoute.post(
 );
 
 // Get all vehicles for current authenticated user (no userId param needed)
+vehicleRoute.get('/', auth(), vehicleController.getMyVehicles);
 vehicleRoute.get('/my-vehicles', auth(), vehicleController.getMyVehicles);
 
 // Get all vehicles for a specific user
-vehicleRoute.get('/user/:userId', vehicleController.getVehiclesByUser);
+vehicleRoute.get('/userId/:userId', vehicleController.getVehiclesByUser);
 
 // Get a single vehicle by ID
-vehicleRoute.get('/:id', vehicleController.getSingleVehicle);
+vehicleRoute.get('/:id', auth(), vehicleController.getSingleVehicle);
 
 // Update a vehicle by ID
 vehicleRoute.patch(
@@ -40,6 +41,6 @@ vehicleRoute.patch(
 );
 
 // Delete a vehicle by ID
-vehicleRoute.delete('/:id', vehicleController.deleteVehicle);
+vehicleRoute.delete('/:id', auth(), vehicleController.deleteVehicle);
 
 export default vehicleRoute;

@@ -3,6 +3,27 @@ import { VehicleModel } from './vehicle.model';
 import AppError from '../../../errors/AppError';
 import { StatusCodes } from 'http-status-codes';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
+
+const getUserIdCandidates = (userId: string) => {
+	const candidates: Array<string | mongoose.Types.ObjectId> = [userId];
+	if (mongoose.Types.ObjectId.isValid(userId)) {
+		candidates.push(new mongoose.Types.ObjectId(userId));
+	}
+	return candidates;
+};
+
+const buildVehicleOwnershipQuery = (userId: string) => {
+	const userIdCandidates = getUserIdCandidates(userId);
+	return {
+		$or: [
+			{ userId: { $in: userIdCandidates } },
+			{ userId: { $exists: false } },
+			{ userId: null },
+			{ userId: '' },
+		],
+	};
+};
 
 const buildVehicleSignature = (data: IVehicle) => {
 	const normalized = {
@@ -35,12 +56,32 @@ const buildVehicleSignature = (data: IVehicle) => {
 
 // Create a new vehicle
 const createVehicle = async (data: IVehicle) => {
-	const normalizedRegistration = (data.registration || '').trim().toUpperCase();
+	const normalizedRegistrationRaw = (data.registration || '').trim().toUpperCase();
+	const normalizedRegistration = normalizedRegistrationRaw || undefined;
+
+	if (normalizedRegistration) {
+		const duplicateByRegistration = await VehicleModel.findOne({
+			userId: data.userId,
+			registration: normalizedRegistration,
+		});
+
+		if (duplicateByRegistration) {
+			throw new AppError(
+				StatusCodes.CONFLICT,
+				`Vehicle with registration ${normalizedRegistration} already added`
+			);
+		}
+	}
+
 	const dataSignature = buildVehicleSignature({
 		...data,
-		registration: normalizedRegistration,
+		registration: normalizedRegistration || '',
 	});
-	const vehicleData = { ...data, registration: normalizedRegistration, dataSignature };
+	const vehicleData = {
+		...data,
+		...(normalizedRegistration ? { registration: normalizedRegistration } : {}),
+		dataSignature,
+	};
 
 	const existing = await VehicleModel.findOne({
 		userId: data.userId,
@@ -57,44 +98,76 @@ const createVehicle = async (data: IVehicle) => {
 		return result;
 	} catch (error: any) {
 		if (error?.code === 11000) {
+			const duplicateMsg = error?.keyPattern?.registration
+				? `Vehicle with registration ${normalizedRegistration || data.registration} already added`
+				: 'Vehicle already added';
 			throw new AppError(
 				StatusCodes.CONFLICT,
-				`Vehicle with registration ${normalizedRegistration} already added`
+				duplicateMsg
 			);
 		}
 		throw error;
 	}
 };
 
-// Get all vehicles for a user (handles both new vehicles with userId and legacy ones)
-const getVehiclesByUser = async (userId: string) => {
-	const result = await VehicleModel.find({
-		$or: [
-			{ userId }, // New vehicles with userId field
-			{ userId: { $exists: false } }, // Legacy vehicles without userId field
-		],
-	});
+// Get all vehicles for a user
+const getVehiclesByUser = async (userId: string, includeLegacy = false) => {
+	const userIdCandidates = getUserIdCandidates(userId);
+	const query = includeLegacy
+		? {
+			$or: [
+				{ userId: { $in: userIdCandidates } },
+				{ userId: { $exists: false } },
+				{ userId: null },
+				{ userId: '' },
+			],
+		}
+		: { userId: { $in: userIdCandidates } };
+
+	const result = await VehicleModel.find(query);
 	return result;
 };
 
 // Get single vehicle by ID
-const getSingleVehicle = async (id: string) => {
-	const result = await VehicleModel.findById(id);
+const getSingleVehicle = async (id: string, userId: string) => {
+	const result = await VehicleModel.findOne({
+		_id: id,
+		...buildVehicleOwnershipQuery(userId),
+	});
+	if (!result) {
+		throw new AppError(StatusCodes.NOT_FOUND, 'Vehicle not found');
+	}
 	return result;
 };
 
 // Update vehicle by ID
-const updateVehicle = async (id: string, payload: Partial<IVehicle>) => {
+const updateVehicle = async (id: string, payload: Partial<IVehicle>, userId: string) => {
 	const { galleryImageEntriesToAdd, ...rest } = payload as Partial<IVehicle> & {
 		galleryImageEntriesToAdd?: { path: string; hash: string }[];
 	};
 
-	const updateQuery: any = { $set: rest };
+	const existingVehicle = await VehicleModel.findOne({
+		_id: id,
+		...buildVehicleOwnershipQuery(userId),
+	}).select('+galleryImageHashes');
+	if (!existingVehicle) {
+		throw new AppError(StatusCodes.NOT_FOUND, 'Vehicle not found');
+	}
+
+	const updateSet: Record<string, unknown> = { ...rest };
+	if (!existingVehicle.userId) {
+		updateSet.userId = userId;
+	}
+	if (typeof updateSet.registration === 'string') {
+		updateSet.registration = updateSet.registration.trim().toUpperCase();
+	}
+
+	const updateQuery: any = { $set: updateSet };
+	const existingHashes = new Set<string>(existingVehicle?.galleryImageHashes || []);
+	let filtered: { path: string; hash: string }[] = [];
 
 	if (galleryImageEntriesToAdd && galleryImageEntriesToAdd.length > 0) {
-		const vehicle = await VehicleModel.findById(id).select('galleryImageHashes');
-		const existingHashes = new Set<string>(vehicle?.galleryImageHashes || []);
-		const filtered = galleryImageEntriesToAdd.filter((entry) => !existingHashes.has(entry.hash));
+		filtered = galleryImageEntriesToAdd.filter((entry) => !existingHashes.has(entry.hash));
 
 		if (filtered.length > 0) {
 			updateQuery.$addToSet = {
@@ -104,16 +177,36 @@ const updateVehicle = async (id: string, payload: Partial<IVehicle>) => {
 		}
 	}
 
-	const result = await VehicleModel.findByIdAndUpdate(id, updateQuery, {
+	const mergedForSignature: IVehicle = {
+		...existingVehicle.toObject(),
+		...updateSet,
+		galleryImageHashes: [...existingHashes, ...filtered.map((x) => x.hash)],
+	};
+	updateQuery.$set.dataSignature = buildVehicleSignature(mergedForSignature);
+
+	const result = await VehicleModel.findOneAndUpdate({
+		_id: id,
+		...buildVehicleOwnershipQuery(userId),
+	}, updateQuery, {
 		new: true,
 		runValidators: true,
 	});
+
+	if (!result) {
+		throw new AppError(StatusCodes.NOT_FOUND, 'Vehicle not found');
+	}
 	return result;
 };
 
 // Delete vehicle by ID
-const deleteVehicle = async (id: string) => {
-	const result = await VehicleModel.findByIdAndDelete(id);
+const deleteVehicle = async (id: string, userId: string) => {
+	const result = await VehicleModel.findOneAndDelete({
+		_id: id,
+		...buildVehicleOwnershipQuery(userId),
+	});
+	if (!result) {
+		throw new AppError(StatusCodes.NOT_FOUND, 'Vehicle not found');
+	}
 	return result;
 };
 

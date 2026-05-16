@@ -88,7 +88,7 @@ const getMyVehicles = catchAsync(async (req: Request, res: Response) => {
 			data: null,
 		});
 	}
-	const vehicles = await vehicleService.getVehiclesByUser(userId);
+	const vehicles = await vehicleService.getVehiclesByUser(userId, true);
 	sendResponse(res, {
 		statusCode: StatusCodes.OK,
 		success: true,
@@ -100,7 +100,16 @@ const getMyVehicles = catchAsync(async (req: Request, res: Response) => {
 // Get single vehicle by ID
 const getSingleVehicle = catchAsync(async (req: Request, res: Response) => {
 	const { id } = req.params;
-	const vehicle = await vehicleService.getSingleVehicle(id);
+	const userId = (req.user?._id?.toString?.() || req.user?.userId || req.user?.id) as string;
+	if (!userId) {
+		return sendResponse(res, {
+			statusCode: StatusCodes.UNAUTHORIZED,
+			success: false,
+			message: 'User not authenticated',
+			data: null,
+		});
+	}
+	const vehicle = await vehicleService.getSingleVehicle(id, userId);
 	sendResponse(res, {
 		statusCode: StatusCodes.OK,
 		success: true,
@@ -143,7 +152,17 @@ const updateVehicle = catchAsync(async (req: Request, res: Response) => {
 		}));
 	}
 
-	const updatedVehicle = await vehicleService.updateVehicle(id, payload);
+	const userId = (req.user?._id?.toString?.() || req.user?.userId || req.user?.id) as string;
+	if (!userId) {
+		return sendResponse(res, {
+			statusCode: StatusCodes.UNAUTHORIZED,
+			success: false,
+			message: 'User not authenticated',
+			data: null,
+		});
+	}
+
+	const updatedVehicle = await vehicleService.updateVehicle(id, payload, userId);
 	sendResponse(res, {
 		statusCode: StatusCodes.OK,
 		success: true,
@@ -155,7 +174,16 @@ const updateVehicle = catchAsync(async (req: Request, res: Response) => {
 // Delete vehicle
 const deleteVehicle = catchAsync(async (req: Request, res: Response) => {
 	const { id } = req.params;
-	const deletedVehicle = await vehicleService.deleteVehicle(id);
+	const userId = (req.user?._id?.toString?.() || req.user?.userId || req.user?.id) as string;
+	if (!userId) {
+		return sendResponse(res, {
+			statusCode: StatusCodes.UNAUTHORIZED,
+			success: false,
+			message: 'User not authenticated',
+			data: null,
+		});
+	}
+	const deletedVehicle = await vehicleService.deleteVehicle(id, userId);
 	sendResponse(res, {
 		statusCode: StatusCodes.OK,
 		success: true,

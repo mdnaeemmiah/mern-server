@@ -21,7 +21,7 @@ app.use('/api', router);
 
 
 app.get("/", (req: Request, res: Response) => {
-  res.send("MernTask World!");
+  res.send("Motor-bridge World!");
 });
 
 
