@@ -18,6 +18,7 @@ export const VehicleValidationSchema = z.object({
 		bodyType: z.string().trim().optional(),
 		engineSize: z.string().trim().optional(),
 		engineCode: z.string().trim().optional(),
+		color: z.string().trim().optional(),
 		galleryImages: z.array(z.string()).optional(),
 	}),
 });
@@ -40,6 +41,7 @@ export const VehicleUpdateValidationSchema = z.object({
 		bodyType: z.string().trim().optional(),
 		engineSize: z.string().trim().optional(),
 		engineCode: z.string().trim().optional(),
+		color: z.string().trim().optional(),
 		galleryImages: z.array(z.string()).optional(),
 	}),
 });

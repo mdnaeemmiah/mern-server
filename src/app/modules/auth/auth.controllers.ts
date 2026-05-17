@@ -5,6 +5,15 @@ import config from '../../config';
 import catchAsync from '../../../utils/catchAsync';
 import sendResponse from '../../../utils/sendResponse';
 
+const refreshCookieOptions = {
+  secure: config.NODE_ENV === 'production',
+  httpOnly: true,
+  sameSite: (config.NODE_ENV === 'production' ? 'none' : 'lax') as
+    | 'none'
+    | 'lax',
+  maxAge: 1000 * 60 * 60 * 24 * 365,
+};
+
 const register = catchAsync(async (req: Request, res: Response) => {
   const result = await AuthService.register(req.body);
   sendResponse(res, {
@@ -31,12 +40,7 @@ const login = catchAsync(async (req: Request, res: Response) => {
 
   const { refreshToken, accessToken, needsPasswordChange } = result;
 
-  res.cookie('refreshToken', refreshToken, {
-    secure: config.NODE_ENV === 'production',
-    httpOnly: true,
-    sameSite: 'none',
-    maxAge: 1000 * 60 * 60 * 24 * 365,
-  });
+  res.cookie('refreshToken', refreshToken, refreshCookieOptions);
 
   sendResponse(res, {
     statusCode: StatusCodes.OK,
@@ -104,6 +108,56 @@ const codeVerify = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const googleLogin = catchAsync(async (req: Request, res: Response) => {
+  const googleUrl = AuthService.getGoogleAuthUrl();
+
+  const userAgent = (req.headers['user-agent'] || '').toString().toLowerCase();
+  const wantsJson = req.query.mode === 'json' || userAgent.includes('postman');
+
+  if (wantsJson) {
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Use this URL in a browser to continue Google login',
+      data: {
+        authUrl: googleUrl,
+      },
+    });
+    return;
+  }
+
+  res.redirect(googleUrl);
+});
+
+const googleCallback = catchAsync(async (req: Request, res: Response) => {
+  const code = req.query.code as string;
+
+  if (!code) {
+    sendResponse(res, {
+      statusCode: StatusCodes.BAD_REQUEST,
+      success: false,
+      message: 'Authorization code is missing from Google callback',
+      data: null,
+    });
+    return;
+  }
+
+  const result = await AuthService.googleCallback(code);
+
+  res.cookie('refreshToken', result.refreshToken, refreshCookieOptions);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Google login successful',
+    data: {
+      accessToken: result.accessToken,
+      needsPasswordChange: result.needsPasswordChange,
+      user: result.user,
+    },
+  });
+});
+
 export const AuthControllers = {
   register,
   verifyEmail,
@@ -113,4 +167,6 @@ export const AuthControllers = {
   forgetPassword,
   resetPassword,
   codeVerify,
+  googleLogin,
+  googleCallback,
 };

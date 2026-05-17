@@ -18,19 +18,42 @@ const AppError_1 = __importDefault(require("../errors/AppError"));
 const catchAsync_1 = __importDefault(require("../utils/catchAsync"));
 const config_1 = __importDefault(require("../app/config"));
 const user_model_1 = require("../app/modules/user/user.model");
+const sanitizeToken = (rawToken) => {
+    if (!rawToken)
+        return '';
+    return rawToken.trim().replace(/^['\"]+|['\"]+$/g, '');
+};
+const extractTokenFromRequest = (req) => {
+    var _a, _b;
+    const authHeader = req.headers.authorization;
+    const cookieToken = ((_a = req.cookies) === null || _a === void 0 ? void 0 : _a.accessToken) || ((_b = req.cookies) === null || _b === void 0 ? void 0 : _b.token);
+    if (typeof authHeader === 'string' && authHeader.length > 0) {
+        const [scheme, credentials] = authHeader.split(' ');
+        if ((scheme === null || scheme === void 0 ? void 0 : scheme.toLowerCase()) === 'bearer' && credentials) {
+            return sanitizeToken(credentials);
+        }
+        return sanitizeToken(authHeader);
+    }
+    if (typeof cookieToken === 'string' && cookieToken.length > 0) {
+        return sanitizeToken(cookieToken);
+    }
+    return '';
+};
 const auth = (...requiredRoles) => {
     return (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-        let token = req.headers.authorization;
-        // Check if the token comes with 'Bearer ' prefix and extract it
-        if (token && token.startsWith('Bearer ')) {
-            token = token.split(' ')[1];
-        }
+        const token = extractTokenFromRequest(req);
         // checking if the token is missing
-        if (!token) {
+        if (!token || token === 'null' || token === 'undefined') {
             throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, "You are not authorized!");
         }
-        // checking if the given token is valid
-        const decoded = jsonwebtoken_1.default.verify(token, config_1.default.jwt_access_secret);
+        let decoded;
+        try {
+            // checking if the given token is valid
+            decoded = jsonwebtoken_1.default.verify(token, config_1.default.jwt_access_secret);
+        }
+        catch (error) {
+            throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'Invalid or malformed token');
+        }
         const { role, email, iat } = decoded;
         // checking if the user is exist
         const user = yield user_model_1.User.findOne({ email });

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import authRouter from '../app/modules/auth/auth.route';
+import oauthRouter from '../app/modules/auth/oauth.route';
 import userRouter from '../app/modules/user/user.route';
 import taskRoute from '../app/modules/task/task.route';
 import vehicleRoute from '../app/modules/vehicle/vehicle.route';
@@ -15,6 +16,10 @@ const moduleRoutes = [
     {
     path: '/auth',
     route: authRouter,
+    },
+    {
+      path: '/oauth',
+      route: oauthRouter,
     },
     {
       path: '/user',

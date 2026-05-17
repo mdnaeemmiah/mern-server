@@ -12,6 +12,7 @@ const user_contant_1 = require("./user.contant");
 const upload_1 = require("../../../middlewares/upload");
 const userRouter = (0, express_1.Router)();
 const maybeUploadProfileImage = upload_1.upload.single('profileImage');
+userRouter.get('/me', (0, auth_1.default)(user_contant_1.USER_ROLE.admin, user_contant_1.USER_ROLE.user), user_controller_1.userController.getMe);
 userRouter.get('/:userId', user_controller_1.userController.getSingleUser);
 userRouter.patch('/:id', (req, res, next) => {
     var _a;

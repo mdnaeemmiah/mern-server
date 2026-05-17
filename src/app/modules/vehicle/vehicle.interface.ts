@@ -37,6 +37,7 @@ export interface IVehicle {
 	bodyType?: string;
 	engineSize?: string;
 	engineCode?: string;
+	color?: string;
 	galleryImages?: string[];
 	galleryImageHashes?: string[];
 	createdAt?: Date;

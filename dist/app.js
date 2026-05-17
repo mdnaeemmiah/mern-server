@@ -19,7 +19,7 @@ app.use((0, cookie_parser_1.default)());
 app.use('/uploads', express_1.default.static(path_1.default.join(process.cwd(), 'uploads')));
 app.use('/api', routes_1.default);
 app.get("/", (req, res) => {
-    res.send("MernTask World!");
+    res.send("Motor-bridge World!");
 });
 app.use(globalErrorHandler_1.default);
 app.use(NotFound_1.default);

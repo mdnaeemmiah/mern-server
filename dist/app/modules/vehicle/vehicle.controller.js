@@ -90,7 +90,7 @@ const getMyVehicles = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
             data: null,
         });
     }
-    const vehicles = yield vehicle_service_1.vehicleService.getVehiclesByUser(userId);
+    const vehicles = yield vehicle_service_1.vehicleService.getVehiclesByUser(userId, true);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
         success: true,
@@ -100,8 +100,18 @@ const getMyVehicles = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 }));
 // Get single vehicle by ID
 const getSingleVehicle = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e;
     const { id } = req.params;
-    const vehicle = yield vehicle_service_1.vehicleService.getSingleVehicle(id);
+    const userId = (((_c = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id) === null || _b === void 0 ? void 0 : _b.toString) === null || _c === void 0 ? void 0 : _c.call(_b)) || ((_d = req.user) === null || _d === void 0 ? void 0 : _d.userId) || ((_e = req.user) === null || _e === void 0 ? void 0 : _e.id));
+    if (!userId) {
+        return (0, sendResponse_1.default)(res, {
+            statusCode: http_status_codes_1.StatusCodes.UNAUTHORIZED,
+            success: false,
+            message: 'User not authenticated',
+            data: null,
+        });
+    }
+    const vehicle = yield vehicle_service_1.vehicleService.getSingleVehicle(id, userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
         success: true,
@@ -111,6 +121,7 @@ const getSingleVehicle = (0, catchAsync_1.default)((req, res) => __awaiter(void 
 }));
 // Update vehicle
 const updateVehicle = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e;
     const { id } = req.params;
     const payload = req.body || {};
     // Handle uploaded files (galleryImages) with hash-based dedupe
@@ -138,7 +149,16 @@ const updateVehicle = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
             hash: galleryImageHashes[idx],
         }));
     }
-    const updatedVehicle = yield vehicle_service_1.vehicleService.updateVehicle(id, payload);
+    const userId = (((_c = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id) === null || _b === void 0 ? void 0 : _b.toString) === null || _c === void 0 ? void 0 : _c.call(_b)) || ((_d = req.user) === null || _d === void 0 ? void 0 : _d.userId) || ((_e = req.user) === null || _e === void 0 ? void 0 : _e.id));
+    if (!userId) {
+        return (0, sendResponse_1.default)(res, {
+            statusCode: http_status_codes_1.StatusCodes.UNAUTHORIZED,
+            success: false,
+            message: 'User not authenticated',
+            data: null,
+        });
+    }
+    const updatedVehicle = yield vehicle_service_1.vehicleService.updateVehicle(id, payload, userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
         success: true,
@@ -148,8 +168,18 @@ const updateVehicle = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 }));
 // Delete vehicle
 const deleteVehicle = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e;
     const { id } = req.params;
-    const deletedVehicle = yield vehicle_service_1.vehicleService.deleteVehicle(id);
+    const userId = (((_c = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id) === null || _b === void 0 ? void 0 : _b.toString) === null || _c === void 0 ? void 0 : _c.call(_b)) || ((_d = req.user) === null || _d === void 0 ? void 0 : _d.userId) || ((_e = req.user) === null || _e === void 0 ? void 0 : _e.id));
+    if (!userId) {
+        return (0, sendResponse_1.default)(res, {
+            statusCode: http_status_codes_1.StatusCodes.UNAUTHORIZED,
+            success: false,
+            message: 'User not authenticated',
+            data: null,
+        });
+    }
+    const deletedVehicle = yield vehicle_service_1.vehicleService.deleteVehicle(id, userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
         success: true,

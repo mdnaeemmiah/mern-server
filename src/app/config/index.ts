@@ -22,5 +22,9 @@ export default {
     process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com',
   email_port: process.env.EMAIL_PORT || 587,
   reset_pass_ui_link: process.env.RESET_PASS_UI_LINK,
+  
+  google_client_id: process.env.GOOGLE_CLIENT_ID,
+  google_client_secret: process.env.GOOGLE_CLIENT_SECRET,
+  google_callback_url: process.env.GOOGLE_CALLBACK_URL,
 
 };   

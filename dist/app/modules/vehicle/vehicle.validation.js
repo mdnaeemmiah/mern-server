@@ -5,10 +5,10 @@ const zod_1 = require("zod");
 exports.VehicleValidationSchema = zod_1.z.object({
     body: zod_1.z.object({
         type: zod_1.z.string().trim().pipe(zod_1.z.enum(['car', 'van', 'bike', 'hgv'])),
-        registration: zod_1.z.string().trim(),
-        make: zod_1.z.string().trim(),
-        model: zod_1.z.string().trim(),
-        year: zod_1.z.coerce.number().int(),
+        registration: zod_1.z.string().trim().optional(),
+        make: zod_1.z.string().trim().optional(),
+        model: zod_1.z.string().trim().optional(),
+        year: zod_1.z.coerce.number().int().optional(),
         motExpiry: zod_1.z.string().trim().optional(),
         roadTaxExpiry: zod_1.z.string().trim().optional(),
         insuranceExpiry: zod_1.z.string().trim().optional(),

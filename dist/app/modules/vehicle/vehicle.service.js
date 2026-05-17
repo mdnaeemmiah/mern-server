@@ -28,6 +28,25 @@ const vehicle_model_1 = require("./vehicle.model");
 const AppError_1 = __importDefault(require("../../../errors/AppError"));
 const http_status_codes_1 = require("http-status-codes");
 const crypto_1 = __importDefault(require("crypto"));
+const mongoose_1 = __importDefault(require("mongoose"));
+const getUserIdCandidates = (userId) => {
+    const candidates = [userId];
+    if (mongoose_1.default.Types.ObjectId.isValid(userId)) {
+        candidates.push(new mongoose_1.default.Types.ObjectId(userId));
+    }
+    return candidates;
+};
+const buildVehicleOwnershipQuery = (userId) => {
+    const userIdCandidates = getUserIdCandidates(userId);
+    return {
+        $or: [
+            { userId: { $in: userIdCandidates } },
+            { userId: { $exists: false } },
+            { userId: null },
+            { userId: '' },
+        ],
+    };
+};
 const buildVehicleSignature = (data) => {
     const normalized = {
         type: (data.type || '').toString().trim().toLowerCase(),
@@ -57,9 +76,20 @@ const buildVehicleSignature = (data) => {
 };
 // Create a new vehicle
 const createVehicle = (data) => __awaiter(void 0, void 0, void 0, function* () {
-    const normalizedRegistration = (data.registration || '').trim().toUpperCase();
-    const dataSignature = buildVehicleSignature(Object.assign(Object.assign({}, data), { registration: normalizedRegistration }));
-    const vehicleData = Object.assign(Object.assign({}, data), { registration: normalizedRegistration, dataSignature });
+    var _a;
+    const normalizedRegistrationRaw = (data.registration || '').trim().toUpperCase();
+    const normalizedRegistration = normalizedRegistrationRaw || undefined;
+    if (normalizedRegistration) {
+        const duplicateByRegistration = yield vehicle_model_1.VehicleModel.findOne({
+            userId: data.userId,
+            registration: normalizedRegistration,
+        });
+        if (duplicateByRegistration) {
+            throw new AppError_1.default(http_status_codes_1.StatusCodes.CONFLICT, `Vehicle with registration ${normalizedRegistration} already added`);
+        }
+    }
+    const dataSignature = buildVehicleSignature(Object.assign(Object.assign({}, data), { registration: normalizedRegistration || '' }));
+    const vehicleData = Object.assign(Object.assign(Object.assign({}, data), (normalizedRegistration ? { registration: normalizedRegistration } : {})), { dataSignature });
     const existing = yield vehicle_model_1.VehicleModel.findOne({
         userId: data.userId,
         dataSignature,
@@ -73,34 +103,57 @@ const createVehicle = (data) => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (error) {
         if ((error === null || error === void 0 ? void 0 : error.code) === 11000) {
-            throw new AppError_1.default(http_status_codes_1.StatusCodes.CONFLICT, `Vehicle with registration ${normalizedRegistration} already added`);
+            const duplicateMsg = ((_a = error === null || error === void 0 ? void 0 : error.keyPattern) === null || _a === void 0 ? void 0 : _a.registration)
+                ? `Vehicle with registration ${normalizedRegistration || data.registration} already added`
+                : 'Vehicle already added';
+            throw new AppError_1.default(http_status_codes_1.StatusCodes.CONFLICT, duplicateMsg);
         }
         throw error;
     }
 });
-// Get all vehicles for a user (handles both new vehicles with userId and legacy ones)
-const getVehiclesByUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield vehicle_model_1.VehicleModel.find({
-        $or: [
-            { userId }, // New vehicles with userId field
-            { userId: { $exists: false } }, // Legacy vehicles without userId field
-        ],
-    });
+// Get all vehicles for a user
+const getVehiclesByUser = (userId_1, ...args_1) => __awaiter(void 0, [userId_1, ...args_1], void 0, function* (userId, includeLegacy = false) {
+    const userIdCandidates = getUserIdCandidates(userId);
+    const query = includeLegacy
+        ? {
+            $or: [
+                { userId: { $in: userIdCandidates } },
+                { userId: { $exists: false } },
+                { userId: null },
+                { userId: '' },
+            ],
+        }
+        : { userId: { $in: userIdCandidates } };
+    const result = yield vehicle_model_1.VehicleModel.find(query);
     return result;
 });
 // Get single vehicle by ID
-const getSingleVehicle = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield vehicle_model_1.VehicleModel.findById(id);
+const getSingleVehicle = (id, userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield vehicle_model_1.VehicleModel.findOne(Object.assign({ _id: id }, buildVehicleOwnershipQuery(userId)));
+    if (!result) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Vehicle not found');
+    }
     return result;
 });
 // Update vehicle by ID
-const updateVehicle = (id, payload) => __awaiter(void 0, void 0, void 0, function* () {
+const updateVehicle = (id, payload, userId) => __awaiter(void 0, void 0, void 0, function* () {
     const _a = payload, { galleryImageEntriesToAdd } = _a, rest = __rest(_a, ["galleryImageEntriesToAdd"]);
-    const updateQuery = { $set: rest };
+    const existingVehicle = yield vehicle_model_1.VehicleModel.findOne(Object.assign({ _id: id }, buildVehicleOwnershipQuery(userId))).select('+galleryImageHashes');
+    if (!existingVehicle) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Vehicle not found');
+    }
+    const updateSet = Object.assign({}, rest);
+    if (!existingVehicle.userId) {
+        updateSet.userId = userId;
+    }
+    if (typeof updateSet.registration === 'string') {
+        updateSet.registration = updateSet.registration.trim().toUpperCase();
+    }
+    const updateQuery = { $set: updateSet };
+    const existingHashes = new Set((existingVehicle === null || existingVehicle === void 0 ? void 0 : existingVehicle.galleryImageHashes) || []);
+    let filtered = [];
     if (galleryImageEntriesToAdd && galleryImageEntriesToAdd.length > 0) {
-        const vehicle = yield vehicle_model_1.VehicleModel.findById(id).select('galleryImageHashes');
-        const existingHashes = new Set((vehicle === null || vehicle === void 0 ? void 0 : vehicle.galleryImageHashes) || []);
-        const filtered = galleryImageEntriesToAdd.filter((entry) => !existingHashes.has(entry.hash));
+        filtered = galleryImageEntriesToAdd.filter((entry) => !existingHashes.has(entry.hash));
         if (filtered.length > 0) {
             updateQuery.$addToSet = {
                 galleryImages: { $each: filtered.map((x) => x.path) },
@@ -108,15 +161,23 @@ const updateVehicle = (id, payload) => __awaiter(void 0, void 0, void 0, functio
             };
         }
     }
-    const result = yield vehicle_model_1.VehicleModel.findByIdAndUpdate(id, updateQuery, {
+    const mergedForSignature = Object.assign(Object.assign(Object.assign({}, existingVehicle.toObject()), updateSet), { galleryImageHashes: [...existingHashes, ...filtered.map((x) => x.hash)] });
+    updateQuery.$set.dataSignature = buildVehicleSignature(mergedForSignature);
+    const result = yield vehicle_model_1.VehicleModel.findOneAndUpdate(Object.assign({ _id: id }, buildVehicleOwnershipQuery(userId)), updateQuery, {
         new: true,
         runValidators: true,
     });
+    if (!result) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Vehicle not found');
+    }
     return result;
 });
 // Delete vehicle by ID
-const deleteVehicle = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield vehicle_model_1.VehicleModel.findByIdAndDelete(id);
+const deleteVehicle = (id, userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield vehicle_model_1.VehicleModel.findOneAndDelete(Object.assign({ _id: id }, buildVehicleOwnershipQuery(userId)));
+    if (!result) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Vehicle not found');
+    }
     return result;
 });
 exports.vehicleService = {

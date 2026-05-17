@@ -21,8 +21,17 @@ const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
 const AppError_1 = __importDefault(require("../../../errors/AppError"));
 const getUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield user_service_1.userService.getUser();
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: 'Users retrieved successfully',
+        data: result,
+    });
+}));
+const getMe = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email } = req.user;
-    const result = yield user_service_1.userService.getUser(email);
+    const result = yield user_service_1.userService.getMe(email);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
         success: true,
@@ -93,6 +102,7 @@ exports.changeStatus = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
 }));
 exports.userController = {
     getUser,
+    getMe,
     getSingleUser,
     updateUser,
     deleteUser: exports.deleteUser,

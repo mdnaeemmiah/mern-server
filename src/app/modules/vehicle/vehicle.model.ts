@@ -89,6 +89,7 @@ const VehicleSchema = new Schema<IVehicle>({
 	bodyType: { type: String },
 	engineSize: { type: String },
 	engineCode: { type: String },
+	color: { type: String },
 	galleryImages: { type: [String], default: [] },
 	galleryImageHashes: { type: [String], default: [], select: false },
 }, {

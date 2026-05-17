@@ -14,13 +14,14 @@ const vehicleRoute = express_1.default.Router();
 // order: auth -> multer parses multipart/form-data -> validation -> controller
 vehicleRoute.post('/create', (0, auth_1.default)(), upload_1.upload.array('galleryImages', 6), (0, validateRequest_1.default)(vehicle_validation_1.VehicleValidationSchema), vehicle_controller_1.vehicleController.createVehicle);
 // Get all vehicles for current authenticated user (no userId param needed)
+vehicleRoute.get('/', (0, auth_1.default)(), vehicle_controller_1.vehicleController.getMyVehicles);
 vehicleRoute.get('/my-vehicles', (0, auth_1.default)(), vehicle_controller_1.vehicleController.getMyVehicles);
 // Get all vehicles for a specific user
-vehicleRoute.get('/user/:userId', vehicle_controller_1.vehicleController.getVehiclesByUser);
+vehicleRoute.get('/userId/:userId', vehicle_controller_1.vehicleController.getVehiclesByUser);
 // Get a single vehicle by ID
-vehicleRoute.get('/:id', vehicle_controller_1.vehicleController.getSingleVehicle);
+vehicleRoute.get('/:id', (0, auth_1.default)(), vehicle_controller_1.vehicleController.getSingleVehicle);
 // Update a vehicle by ID
 vehicleRoute.patch('/:id', (0, auth_1.default)(), upload_1.upload.array('galleryImages', 6), (0, validateRequest_1.default)(vehicle_validation_1.VehicleUpdateValidationSchema), vehicle_controller_1.vehicleController.updateVehicle);
 // Delete a vehicle by ID
-vehicleRoute.delete('/:id', vehicle_controller_1.vehicleController.deleteVehicle);
+vehicleRoute.delete('/:id', (0, auth_1.default)(), vehicle_controller_1.vehicleController.deleteVehicle);
 exports.default = vehicleRoute;
