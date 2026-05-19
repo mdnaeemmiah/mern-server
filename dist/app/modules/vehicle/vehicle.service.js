@@ -65,6 +65,7 @@ const buildVehicleSignature = (data) => {
         bodyType: (data.bodyType || '').toString().trim().toLowerCase(),
         engineSize: (data.engineSize || '').toString().trim().toLowerCase(),
         engineCode: (data.engineCode || '').toString().trim().toUpperCase(),
+        color: (data.color || '').toString().trim().toLowerCase(),
         galleryImageHashes: Array.isArray(data.galleryImageHashes)
             ? [...data.galleryImageHashes].map((x) => x.toString().trim()).sort()
             : [],

@@ -4,12 +4,29 @@ import { Types } from 'mongoose';
 import crypto from 'crypto';
 import AppError from '../../../errors/AppError';
 import { StatusCodes } from 'http-status-codes';
+import { VehicleModel } from '../vehicle/vehicle.model';
+
+const assertVehicleOwnership = async (vehicleId: string, userId: string) => {
+	if (!Types.ObjectId.isValid(vehicleId)) {
+		throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid vehicle id');
+	}
+
+	const vehicle = await VehicleModel.findOne({
+		_id: vehicleId,
+		$or: [{ userId }, { userId: { $exists: false } }, { userId: null }, { userId: '' }],
+	});
+
+	if (!vehicle) {
+		throw new AppError(StatusCodes.NOT_FOUND, 'Vehicle not found');
+	}
+};
 
 const buildCostSignature = (data: ICost) => {
 	const entryDate = data.entryDate ? new Date(data.entryDate) : new Date();
 	const dateOnly = entryDate.toISOString().slice(0, 10);
 
 	const normalized = {
+		vehicleId: (data.vehicleId || '').toString().trim(),
 		amount: Number(data.amount || 0),
 		purpose: (data.purpose || '').toString().trim().toLowerCase(),
 		entryDate: dateOnly,
@@ -22,12 +39,19 @@ const buildCostSignature = (data: ICost) => {
 };
 
 const createCost = async (data: ICost) => {
+	if (!data.vehicleId) {
+		throw new AppError(StatusCodes.BAD_REQUEST, 'vehicleId is required');
+	}
+
+	await assertVehicleOwnership(data.vehicleId, data.userId as string);
+
 	const entryDate = data.entryDate ? new Date(data.entryDate) : new Date();
 	const dataSignature = buildCostSignature({ ...data, entryDate });
 	const costData = { ...data, entryDate, dataSignature };
 
 	const existing = await CostModel.findOne({
 		userId: data.userId,
+		vehicleId: data.vehicleId,
 		dataSignature,
 	});
 	if (existing) {

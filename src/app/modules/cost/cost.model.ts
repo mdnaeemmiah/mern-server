@@ -4,6 +4,7 @@ import { ICost } from './cost.interface';
 const CostSchema = new Schema<ICost>(
 	{
 		userId: { type: String, required: true, index: true },
+		vehicleId: { type: String, required: true, index: true },
 		amount: { type: Number, required: true },
 		purpose: { type: String, required: true },
 		entryDate: { type: Date, default: Date.now, index: true },
@@ -12,6 +13,6 @@ const CostSchema = new Schema<ICost>(
 	{ timestamps: true },
 );
 
-CostSchema.index({ userId: 1, dataSignature: 1 }, { unique: true });
+CostSchema.index({ userId: 1, vehicleId: 1, dataSignature: 1 }, { unique: true });
 
 export const CostModel = mongoose.model<ICost>('CostModel', CostSchema);

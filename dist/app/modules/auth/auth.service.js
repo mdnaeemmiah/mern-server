@@ -27,6 +27,39 @@ const AppError_1 = __importDefault(require("../../../errors/AppError"));
 // import { createToken } from './auth.utils';
 // import AppError from '../../../errors/AppError';
 const sendEmail_1 = require("../../utils/sendEmail");
+const crypto_1 = __importDefault(require("crypto"));
+const https_1 = __importDefault(require("https"));
+const httpsRequest = (url, options, body) => {
+    return new Promise((resolve, reject) => {
+        const request = https_1.default.request(url, options !== null && options !== void 0 ? options : {}, (response) => {
+            let rawData = '';
+            response.on('data', (chunk) => {
+                rawData += chunk;
+            });
+            response.on('end', () => {
+                var _a;
+                const statusCode = (_a = response.statusCode) !== null && _a !== void 0 ? _a : 500;
+                if (statusCode < 200 || statusCode >= 300) {
+                    return reject(new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, `Google OAuth request failed with status ${statusCode}`));
+                }
+                try {
+                    const parsed = JSON.parse(rawData);
+                    resolve(parsed);
+                }
+                catch (_b) {
+                    reject(new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Invalid response received from Google OAuth'));
+                }
+            });
+        });
+        request.on('error', () => {
+            reject(new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Failed to connect with Google OAuth services'));
+        });
+        if (body) {
+            request.write(body);
+        }
+        request.end();
+    });
+};
 const register = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     // checking if the user is exist
     const user = yield user_model_1.User.isUserExistsByCustomId(payload.email);
@@ -208,6 +241,86 @@ const codeVerify = (payload) => __awaiter(void 0, void 0, void 0, function* () {
         message: 'Code verified successfully',
     };
 });
+const getGoogleAuthUrl = () => {
+    if (!config_1.default.google_client_id ||
+        !config_1.default.google_client_secret ||
+        !config_1.default.google_callback_url) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, 'Google OAuth environment variables are missing');
+    }
+    const params = new URLSearchParams({
+        client_id: config_1.default.google_client_id,
+        redirect_uri: config_1.default.google_callback_url,
+        response_type: 'code',
+        scope: 'openid email profile',
+        access_type: 'offline',
+        prompt: 'consent',
+    });
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+};
+const googleCallback = (code) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    if (!config_1.default.google_client_id ||
+        !config_1.default.google_client_secret ||
+        !config_1.default.google_callback_url) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, 'Google OAuth environment variables are missing');
+    }
+    const tokenRequestBody = new URLSearchParams({
+        code,
+        client_id: config_1.default.google_client_id,
+        client_secret: config_1.default.google_client_secret,
+        redirect_uri: config_1.default.google_callback_url,
+        grant_type: 'authorization_code',
+    }).toString();
+    const tokenResponse = yield httpsRequest('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': Buffer.byteLength(tokenRequestBody),
+        },
+    }, tokenRequestBody);
+    const googleUser = yield httpsRequest('https://www.googleapis.com/oauth2/v3/userinfo', {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${tokenResponse.access_token}`,
+        },
+    });
+    if (!googleUser.email) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Google account email not found in OAuth response');
+    }
+    let user = yield user_model_1.User.findOne({ email: googleUser.email }).select('+password');
+    if (!user) {
+        const generatedPassword = crypto_1.default.randomBytes(32).toString('hex');
+        user = yield user_model_1.User.create({
+            name: googleUser.name || googleUser.email.split('@')[0],
+            email: googleUser.email,
+            password: generatedPassword,
+            isVerified: (_a = googleUser.email_verified) !== null && _a !== void 0 ? _a : true,
+            needsPasswordChange: false,
+            profileImage: googleUser.picture,
+            role: 'user',
+        });
+    }
+    if (user.status === 'blocked') {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'This user is blocked ! !');
+    }
+    const jwtPayload = {
+        role: user.role,
+        email: user.email,
+    };
+    const accessToken = (0, auth_utils_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expires_in);
+    const refreshToken = (0, auth_utils_1.createToken)(jwtPayload, config_1.default.jwt_refresh_secret, config_1.default.jwt_refresh_expires_in);
+    return {
+        accessToken,
+        refreshToken,
+        needsPasswordChange: user.needsPasswordChange,
+        user: {
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            profileImage: user.profileImage,
+        },
+    };
+});
 exports.AuthService = {
     register,
     login,
@@ -217,4 +330,6 @@ exports.AuthService = {
     forgetPassword,
     resetPassword,
     codeVerify,
+    getGoogleAuthUrl,
+    googleCallback,
 };

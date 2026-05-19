@@ -1,5 +1,6 @@
 export interface IDocument {
 	userId?: string;
+	vehicleId: string;
 	title: string;
 	files?: string[];
 	fileHashes?: string[];

@@ -7,6 +7,7 @@ import vehicleRoute from '../app/modules/vehicle/vehicle.route';
 import documentsRoute from '../app/modules/documents/documents.route';
 import costRoute from '../app/modules/cost/cost.route';
 import reportRoute from '../app/modules/report/report.route';
+import contactRoute from '../app/modules/contact/contact.route';
 
 
 
@@ -44,6 +45,10 @@ const moduleRoutes = [
     {
       path: '/report',
       route: reportRoute,
+    },
+    {
+      path: '/contact',
+      route: contactRoute,
     },
 ];
 

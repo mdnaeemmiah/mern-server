@@ -29,6 +29,12 @@ const auth_service_1 = require("./auth.service");
 const config_1 = __importDefault(require("../../config"));
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
+const refreshCookieOptions = {
+    secure: config_1.default.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: (config_1.default.NODE_ENV === 'production' ? 'none' : 'lax'),
+    maxAge: 1000 * 60 * 60 * 24 * 365,
+};
 const register = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield auth_service_1.AuthService.register(req.body);
     (0, sendResponse_1.default)(res, {
@@ -51,12 +57,7 @@ const verifyEmail = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, vo
 const login = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield auth_service_1.AuthService.login(req.body);
     const { refreshToken, accessToken, needsPasswordChange } = result;
-    res.cookie('refreshToken', refreshToken, {
-        secure: config_1.default.NODE_ENV === 'production',
-        httpOnly: true,
-        sameSite: 'none',
-        maxAge: 1000 * 60 * 60 * 24 * 365,
-    });
+    res.cookie('refreshToken', refreshToken, refreshCookieOptions);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
         success: true,
@@ -115,6 +116,47 @@ const codeVerify = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
         data: result,
     });
 }));
+const googleLogin = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const googleUrl = auth_service_1.AuthService.getGoogleAuthUrl();
+    const userAgent = (req.headers['user-agent'] || '').toString().toLowerCase();
+    const wantsJson = req.query.mode === 'json' || userAgent.includes('postman');
+    if (wantsJson) {
+        (0, sendResponse_1.default)(res, {
+            statusCode: http_status_codes_1.StatusCodes.OK,
+            success: true,
+            message: 'Use this URL in a browser to continue Google login',
+            data: {
+                authUrl: googleUrl,
+            },
+        });
+        return;
+    }
+    res.redirect(googleUrl);
+}));
+const googleCallback = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const code = req.query.code;
+    if (!code) {
+        (0, sendResponse_1.default)(res, {
+            statusCode: http_status_codes_1.StatusCodes.BAD_REQUEST,
+            success: false,
+            message: 'Authorization code is missing from Google callback',
+            data: null,
+        });
+        return;
+    }
+    const result = yield auth_service_1.AuthService.googleCallback(code);
+    res.cookie('refreshToken', result.refreshToken, refreshCookieOptions);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: 'Google login successful',
+        data: {
+            accessToken: result.accessToken,
+            needsPasswordChange: result.needsPasswordChange,
+            user: result.user,
+        },
+    });
+}));
 exports.AuthControllers = {
     register,
     verifyEmail,
@@ -124,4 +166,6 @@ exports.AuthControllers = {
     forgetPassword,
     resetPassword,
     codeVerify,
+    googleLogin,
+    googleCallback,
 };

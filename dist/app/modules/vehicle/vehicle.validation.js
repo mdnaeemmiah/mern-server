@@ -20,6 +20,7 @@ exports.VehicleValidationSchema = zod_1.z.object({
         bodyType: zod_1.z.string().trim().optional(),
         engineSize: zod_1.z.string().trim().optional(),
         engineCode: zod_1.z.string().trim().optional(),
+        color: zod_1.z.string().trim().optional(),
         galleryImages: zod_1.z.array(zod_1.z.string()).optional(),
     }),
 });
@@ -41,6 +42,7 @@ exports.VehicleUpdateValidationSchema = zod_1.z.object({
         bodyType: zod_1.z.string().trim().optional(),
         engineSize: zod_1.z.string().trim().optional(),
         engineCode: zod_1.z.string().trim().optional(),
+        color: zod_1.z.string().trim().optional(),
         galleryImages: zod_1.z.array(zod_1.z.string()).optional(),
     }),
 });

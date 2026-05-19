@@ -3,9 +3,27 @@ import { DocumentModel } from './documents.model';
 import crypto from 'crypto';
 import AppError from '../../../errors/AppError';
 import { StatusCodes } from 'http-status-codes';
+import { VehicleModel } from '../vehicle/vehicle.model';
+import { Types } from 'mongoose';
+
+const assertVehicleOwnership = async (vehicleId: string, userId: string) => {
+	if (!Types.ObjectId.isValid(vehicleId)) {
+		throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid vehicle id');
+	}
+
+	const vehicle = await VehicleModel.findOne({
+		_id: vehicleId,
+		$or: [{ userId }, { userId: { $exists: false } }, { userId: null }, { userId: '' }],
+	});
+
+	if (!vehicle) {
+		throw new AppError(StatusCodes.NOT_FOUND, 'Vehicle not found');
+	}
+};
 
 const buildDocumentSignature = (data: IDocument) => {
 	const normalized = {
+		vehicleId: (data.vehicleId || '').toString().trim(),
 		title: (data.title || '').toString().trim().toLowerCase(),
 		fileHashes: Array.isArray(data.fileHashes)
 			? [...data.fileHashes].map((x) => x.toString().trim()).sort()
@@ -19,11 +37,18 @@ const buildDocumentSignature = (data: IDocument) => {
 };
 
 const createDocument = async (data: IDocument) => {
+	if (!data.vehicleId) {
+		throw new AppError(StatusCodes.BAD_REQUEST, 'vehicleId is required');
+	}
+
+	await assertVehicleOwnership(data.vehicleId, data.userId as string);
+
 	const dataSignature = buildDocumentSignature(data);
 	const documentData = { ...data, dataSignature };
 
 	const existing = await DocumentModel.findOne({
 		userId: data.userId,
+		vehicleId: data.vehicleId,
 		dataSignature,
 	});
 	if (existing) {
