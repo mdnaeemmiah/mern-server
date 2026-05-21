@@ -4,6 +4,9 @@ import catchAsync from '../../../utils/catchAsync';
 import sendResponse from '../../../utils/sendResponse';
 import { contactService } from './contact.service';
 
+const getParam = (value: string | string[] | undefined): string =>
+	(Array.isArray(value) ? value[0] : value) || '';
+
 const createContact = catchAsync(async (req: Request, res: Response) => {
 	const body = req.body || {};
 
@@ -64,7 +67,7 @@ const getSingleContact = catchAsync(async (req: Request, res: Response) => {
 		});
 	}
 
-	const { id } = req.params;
+	const id = getParam(req.params.id);
 	const contact = await contactService.getSingleContact(id, userId);
 	sendResponse(res, {
 		statusCode: StatusCodes.OK,
@@ -85,7 +88,7 @@ const updateContact = catchAsync(async (req: Request, res: Response) => {
 		});
 	}
 
-	const { id } = req.params;
+	const id = getParam(req.params.id);
 	const payload = req.body || {};
 	if ('userId' in payload) delete payload.userId;
 
@@ -109,7 +112,7 @@ const deleteContact = catchAsync(async (req: Request, res: Response) => {
 		});
 	}
 
-	const { id } = req.params;
+	const id = getParam(req.params.id);
 	const deletedContact = await contactService.deleteContact(id, userId);
 	sendResponse(res, {
 		statusCode: StatusCodes.OK,
