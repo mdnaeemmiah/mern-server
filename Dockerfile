@@ -1,4 +1,4 @@
-FROM node:20-alpine AS deps
+FROM node:20-bookworm-slim AS deps
 WORKDIR /app
 
 # Enable pnpm via Corepack
@@ -7,7 +7,7 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
-FROM node:20-alpine AS build
+FROM node:20-bookworm-slim AS build
 WORKDIR /app
 
 RUN corepack enable
@@ -18,7 +18,7 @@ COPY src ./src
 
 RUN pnpm run build
 
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
