@@ -7,6 +7,9 @@ import catchAsync from '../../../utils/catchAsync';
 import sendResponse from '../../../utils/sendResponse';
 import { vehicleService } from './vehicle.service';
 
+const getParam = (value: string | string[] | undefined): string =>
+	(Array.isArray(value) ? value[0] : value) || '';
+
 // Create a new vehicle
 const createVehicle = catchAsync(async (req: Request, res: Response) => {
 	// Ensure we have a body object (multer sets req.body for multipart)
@@ -67,7 +70,7 @@ const createVehicle = catchAsync(async (req: Request, res: Response) => {
 
 // Get all vehicles for a specific user (by userId param)
 const getVehiclesByUser = catchAsync(async (req: Request, res: Response) => {
-	const { userId } = req.params;
+	const userId = getParam(req.params.userId);
 	const vehicles = await vehicleService.getVehiclesByUser(userId);
 	sendResponse(res, {
 		statusCode: StatusCodes.OK,
@@ -99,7 +102,7 @@ const getMyVehicles = catchAsync(async (req: Request, res: Response) => {
 
 // Get single vehicle by ID
 const getSingleVehicle = catchAsync(async (req: Request, res: Response) => {
-	const { id } = req.params;
+	const id = getParam(req.params.id);
 	const userId = (req.user?._id?.toString?.() || req.user?.userId || req.user?.id) as string;
 	if (!userId) {
 		return sendResponse(res, {
@@ -120,7 +123,7 @@ const getSingleVehicle = catchAsync(async (req: Request, res: Response) => {
 
 // Update vehicle
 const updateVehicle = catchAsync(async (req: Request, res: Response) => {
-	const { id } = req.params;
+	const id = getParam(req.params.id);
 	const payload = req.body || {};
 
 	// Handle uploaded files (galleryImages) with hash-based dedupe
@@ -173,7 +176,7 @@ const updateVehicle = catchAsync(async (req: Request, res: Response) => {
 
 // Delete vehicle
 const deleteVehicle = catchAsync(async (req: Request, res: Response) => {
-	const { id } = req.params;
+	const id = getParam(req.params.id);
 	const userId = (req.user?._id?.toString?.() || req.user?.userId || req.user?.id) as string;
 	if (!userId) {
 		return sendResponse(res, {

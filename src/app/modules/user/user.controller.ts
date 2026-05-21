@@ -10,6 +10,9 @@ import catchAsync from '../../../utils/catchAsync';
 import sendResponse from '../../../utils/sendResponse';
 import AppError from '../../../errors/AppError';
 
+const getParam = (value: string | string[] | undefined): string =>
+  (Array.isArray(value) ? value[0] : value) || '';
+
 
 const getUser = catchAsync(async (req, res) => {
   const result = await userService.getUser();
@@ -36,7 +39,7 @@ const getMe = catchAsync(async (req, res) => {
 
 const getSingleUser = catchAsync(async (req, res) => {
   console.log(req.params);
-  const userId = req.params.userId;
+  const userId = getParam(req.params.userId);
 
   const result = await userService.getSingleUser(userId);
 
@@ -49,7 +52,7 @@ const getSingleUser = catchAsync(async (req, res) => {
 });
 
 const updateUser = catchAsync(async (req, res) => {
-  const {id} = req.params;
+  const id = getParam(req.params.id);
   const body = req.body as Partial<IUser>;
 
   const file = (req as Request & { file?: Express.Multer.File }).file;
@@ -67,7 +70,7 @@ const updateUser = catchAsync(async (req, res) => {
 });
 
 export const deleteUser = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = getParam(req.params.id);
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid user ID');
@@ -89,7 +92,7 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
 
 
 export const changeStatus = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = getParam(req.params.id);
   const { status } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {

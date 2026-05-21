@@ -4,6 +4,9 @@ import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse";
 import { taskService } from "./task.service";
 
+const getParam = (value: string | string[] | undefined): string =>
+  (Array.isArray(value) ? value[0] : value) || "";
+
 // Create a new task
 const createTask = catchAsync(async (req: Request, res: Response) => {
   const validatedData = req.body;
@@ -32,7 +35,7 @@ const getAllTasks = catchAsync(async (_req: Request, res: Response) => {
 
 // Get single task by ID
 const getSingleTask = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = getParam(req.params.id);
 
   const task = await taskService.getSingleTask(id);
 
@@ -46,7 +49,7 @@ const getSingleTask = catchAsync(async (req: Request, res: Response) => {
 
 // Update task
 const updateTask = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = getParam(req.params.id);
   const payload = req.body;
 
   const updatedTask = await taskService.updateTask(id, payload);
@@ -61,7 +64,7 @@ const updateTask = catchAsync(async (req: Request, res: Response) => {
 
 // Delete task
 const deleteTask = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = getParam(req.params.id);
 
   const deletedTask = await taskService.deleteTask(id);
 
