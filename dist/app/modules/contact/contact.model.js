@@ -33,15 +33,13 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DocumentModel = void 0;
+exports.ContactModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const DocumentSchema = new mongoose_1.Schema({
+const ContactSchema = new mongoose_1.Schema({
     userId: { type: String, required: true, index: true },
-    vehicleId: { type: String, required: true, index: true },
-    title: { type: String, required: true },
-    files: { type: [String], default: [] },
-    fileHashes: { type: [String], default: [], select: false },
+    contactName: { type: String, required: true, trim: true },
+    contactNumber: { type: String, required: true, trim: true },
     dataSignature: { type: String, required: true, index: true, select: false },
 }, { timestamps: true });
-DocumentSchema.index({ userId: 1, vehicleId: 1, dataSignature: 1 }, { unique: true });
-exports.DocumentModel = mongoose_1.default.model('DocumentModel', DocumentSchema);
+ContactSchema.index({ userId: 1, dataSignature: 1 }, { unique: true });
+exports.ContactModel = mongoose_1.default.model('ContactModel', ContactSchema);

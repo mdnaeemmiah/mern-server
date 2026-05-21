@@ -37,10 +37,11 @@ exports.CostModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const CostSchema = new mongoose_1.Schema({
     userId: { type: String, required: true, index: true },
+    vehicleId: { type: String, required: true, index: true },
     amount: { type: Number, required: true },
     purpose: { type: String, required: true },
     entryDate: { type: Date, default: Date.now, index: true },
     dataSignature: { type: String, required: true, index: true, select: false },
 }, { timestamps: true });
-CostSchema.index({ userId: 1, dataSignature: 1 }, { unique: true });
+CostSchema.index({ userId: 1, vehicleId: 1, dataSignature: 1 }, { unique: true });
 exports.CostModel = mongoose_1.default.model('CostModel', CostSchema);

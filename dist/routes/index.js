@@ -12,6 +12,7 @@ const vehicle_route_1 = __importDefault(require("../app/modules/vehicle/vehicle.
 const documents_route_1 = __importDefault(require("../app/modules/documents/documents.route"));
 const cost_route_1 = __importDefault(require("../app/modules/cost/cost.route"));
 const report_route_1 = __importDefault(require("../app/modules/report/report.route"));
+const contact_route_1 = __importDefault(require("../app/modules/contact/contact.route"));
 const router = (0, express_1.Router)();
 const moduleRoutes = [
     {
@@ -45,6 +46,10 @@ const moduleRoutes = [
     {
         path: '/report',
         route: report_route_1.default,
+    },
+    {
+        path: '/contact',
+        route: contact_route_1.default,
     },
 ];
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

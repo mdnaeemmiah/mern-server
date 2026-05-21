@@ -28,8 +28,23 @@ const documents_model_1 = require("./documents.model");
 const crypto_1 = __importDefault(require("crypto"));
 const AppError_1 = __importDefault(require("../../../errors/AppError"));
 const http_status_codes_1 = require("http-status-codes");
+const vehicle_model_1 = require("../vehicle/vehicle.model");
+const mongoose_1 = require("mongoose");
+const assertVehicleOwnership = (vehicleId, userId) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!mongoose_1.Types.ObjectId.isValid(vehicleId)) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Invalid vehicle id');
+    }
+    const vehicle = yield vehicle_model_1.VehicleModel.findOne({
+        _id: vehicleId,
+        $or: [{ userId }, { userId: { $exists: false } }, { userId: null }, { userId: '' }],
+    });
+    if (!vehicle) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'Vehicle not found');
+    }
+});
 const buildDocumentSignature = (data) => {
     const normalized = {
+        vehicleId: (data.vehicleId || '').toString().trim(),
         title: (data.title || '').toString().trim().toLowerCase(),
         fileHashes: Array.isArray(data.fileHashes)
             ? [...data.fileHashes].map((x) => x.toString().trim()).sort()
@@ -41,10 +56,15 @@ const buildDocumentSignature = (data) => {
         .digest('hex');
 };
 const createDocument = (data) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!data.vehicleId) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'vehicleId is required');
+    }
+    yield assertVehicleOwnership(data.vehicleId, data.userId);
     const dataSignature = buildDocumentSignature(data);
     const documentData = Object.assign(Object.assign({}, data), { dataSignature });
     const existing = yield documents_model_1.DocumentModel.findOne({
         userId: data.userId,
+        vehicleId: data.vehicleId,
         dataSignature,
     });
     if (existing) {
