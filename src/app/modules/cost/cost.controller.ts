@@ -4,6 +4,9 @@ import catchAsync from '../../../utils/catchAsync';
 import sendResponse from '../../../utils/sendResponse';
 import { costService } from './cost.service';
 
+const getParam = (value: string | string[] | undefined): string =>
+	(Array.isArray(value) ? value[0] : value) || '';
+
 const createCost = catchAsync(async (req: Request, res: Response) => {
 	const body = req.body || {};
 
@@ -64,7 +67,7 @@ const getSingleCost = catchAsync(async (req: Request, res: Response) => {
 		});
 	}
 
-	const { id } = req.params;
+	const id = getParam(req.params.id);
 	const cost = await costService.getSingleCost(id, userId);
 	sendResponse(res, {
 		statusCode: StatusCodes.OK,
@@ -85,7 +88,7 @@ const updateCost = catchAsync(async (req: Request, res: Response) => {
 		});
 	}
 
-	const { id } = req.params;
+	const id = getParam(req.params.id);
 	const payload = req.body || {};
 	const updatedCost = await costService.updateCost(id, userId, payload);
 	sendResponse(res, {
@@ -107,7 +110,7 @@ const deleteCost = catchAsync(async (req: Request, res: Response) => {
 		});
 	}
 
-	const { id } = req.params;
+	const id = getParam(req.params.id);
 	const deletedCost = await costService.deleteCost(id, userId);
 	sendResponse(res, {
 		statusCode: StatusCodes.OK,

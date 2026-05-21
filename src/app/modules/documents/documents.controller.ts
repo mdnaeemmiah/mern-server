@@ -7,6 +7,9 @@ import catchAsync from '../../../utils/catchAsync';
 import sendResponse from '../../../utils/sendResponse';
 import { documentsService } from './documents.service';
 
+const getParam = (value: string | string[] | undefined): string =>
+	(Array.isArray(value) ? value[0] : value) || '';
+
 const createDocument = catchAsync(async (req: Request, res: Response) => {
 	const body = req.body || {};
 
@@ -90,7 +93,7 @@ const getSingleDocument = catchAsync(async (req: Request, res: Response) => {
 		});
 	}
 
-	const { id } = req.params;
+	const id = getParam(req.params.id);
 	const document = await documentsService.getSingleDocument(id, userId);
 	sendResponse(res, {
 		statusCode: StatusCodes.OK,
@@ -111,7 +114,7 @@ const updateDocument = catchAsync(async (req: Request, res: Response) => {
 		});
 	}
 
-	const { id } = req.params;
+	const id = getParam(req.params.id);
 	const payload = req.body || {};
 
 	const files = (req as Request & { files?: Express.Multer.File[] }).files as
@@ -162,7 +165,7 @@ const deleteDocument = catchAsync(async (req: Request, res: Response) => {
 		});
 	}
 
-	const { id } = req.params;
+	const id = getParam(req.params.id);
 	const deletedDocument = await documentsService.deleteDocument(id, userId);
 	sendResponse(res, {
 		statusCode: StatusCodes.OK,
