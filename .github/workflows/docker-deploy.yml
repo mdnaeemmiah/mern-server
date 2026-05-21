@@ -37,6 +37,10 @@ jobs:
             type=sha
             type=raw,value=latest
 
+      - name: Prepare build env file
+        run: |
+          printf '%s' "${{ secrets.APP_ENV_FILE }}" > .env.build
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -44,8 +48,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          secrets: |
-            app_env=${{ secrets.APP_ENV_FILE }}
+          secret-files: |
+            app_env=.env.build
 
   deploy-ec2:
     needs: build-and-push
