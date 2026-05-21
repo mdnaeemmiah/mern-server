@@ -1,33 +1,26 @@
-FROM node:20-bookworm-slim AS deps
+FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 
-# Enable pnpm via Corepack
-RUN corepack enable && corepack prepare pnpm@9.15.5 --activate
+COPY package.json package-lock.json ./
+RUN npm install --no-audit --no-fund
 
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-
-FROM node:20-bookworm-slim AS build
+FROM node:22-bookworm-slim AS build
 WORKDIR /app
-
-RUN corepack enable && corepack prepare pnpm@9.15.5 --activate
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY package.json pnpm-lock.yaml tsconfig.json ./
+COPY package.json package-lock.json tsconfig.json ./
 COPY src ./src
 
-RUN pnpm run build
+RUN npm run build
 
-FROM node:20-bookworm-slim AS runner
+FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=5000
 
-RUN corepack enable && corepack prepare pnpm@9.15.5 --activate
-
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --prod --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm install --no-audit --no-fund
 
 COPY --from=build /app/dist ./dist
 
