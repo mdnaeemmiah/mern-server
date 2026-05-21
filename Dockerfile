@@ -2,7 +2,7 @@ FROM node:20-bookworm-slim AS deps
 WORKDIR /app
 
 # Enable pnpm via Corepack
-RUN corepack enable
+RUN corepack enable && corepack prepare pnpm@9.15.5 --activate
 
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
@@ -10,7 +10,7 @@ RUN pnpm install --frozen-lockfile
 FROM node:20-bookworm-slim AS build
 WORKDIR /app
 
-RUN corepack enable
+RUN corepack enable && corepack prepare pnpm@9.15.5 --activate
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml tsconfig.json ./
@@ -24,7 +24,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=5000
 
-RUN corepack enable
+RUN corepack enable && corepack prepare pnpm@9.15.5 --activate
 
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --prod --frozen-lockfile
