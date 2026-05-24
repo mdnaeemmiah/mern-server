@@ -70,7 +70,7 @@ const getMyReports = catchAsync(async (req: Request, res: Response) => {
 		success: true,
 		message: 'Reports retrieved successfully',
 		data: {
-			items: reports.map((report) => ({
+			items: reports.map((report:any) => ({
 				report,
 				summary: reportService.buildReportSummary(report),
 			})),

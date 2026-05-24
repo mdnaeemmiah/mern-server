@@ -36,11 +36,7 @@ const reportBodySchema = z.object({
 	scenePhotos: z.array(z.string().trim().min(1)).optional(),
 });
 
-export const ReportCreateValidationSchema = z.object({
-	body: reportBodySchema,
-});
+export const ReportCreateValidationSchema = reportBodySchema;
 
-export const ReportUpdateValidationSchema = z.object({
-	body: reportBodySchema,
-});
+export const ReportUpdateValidationSchema = reportBodySchema;
 

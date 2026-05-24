@@ -94,19 +94,13 @@ const register = async (payload: IUser) => {
     throw new AppError(StatusCodes.BAD_REQUEST, 'This user is already exist!');
   }
 
-  // generate verification code
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
   const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-  payload.verificationCode = verificationCode;
-  payload.verificationCodeExpires = verificationCodeExpires;
-
-  const newUser = new User(payload);
-  await newUser.save();
-
+  // Send verification email first
   try {
     await sendEmail(
-      newUser.email,
+      payload.email,
       'Verify your email',
       `<p>Your verification code is: <h1>${verificationCode}</h1></p>`,
     );
@@ -116,6 +110,13 @@ const register = async (payload: IUser) => {
       'Failed to send verification email',
     );
   }
+
+  // If email is sent successfully, then save the user
+  payload.verificationCode = verificationCode;
+  payload.verificationCodeExpires = verificationCodeExpires;
+
+  const newUser = new User(payload);
+  await newUser.save();
 
   return {
     message: 'Please check your email to verify your account.',
