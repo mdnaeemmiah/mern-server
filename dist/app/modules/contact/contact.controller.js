@@ -17,6 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
 const contact_service_1 = require("./contact.service");
+const getParam = (value) => (Array.isArray(value) ? value[0] : value) || '';
 const createContact = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e;
     const body = req.body || {};
@@ -70,7 +71,7 @@ const getSingleContact = (0, catchAsync_1.default)((req, res) => __awaiter(void 
             data: null,
         });
     }
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const contact = yield contact_service_1.contactService.getSingleContact(id, userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
@@ -90,7 +91,7 @@ const updateContact = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
             data: null,
         });
     }
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const payload = req.body || {};
     if ('userId' in payload)
         delete payload.userId;
@@ -113,7 +114,7 @@ const deleteContact = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
             data: null,
         });
     }
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const deletedContact = yield contact_service_1.contactService.deleteContact(id, userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,

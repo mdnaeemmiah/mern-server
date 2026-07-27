@@ -20,6 +20,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
 const documents_service_1 = require("./documents.service");
+const getParam = (value) => (Array.isArray(value) ? value[0] : value) || '';
 const createDocument = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e;
     const body = req.body || {};
@@ -91,7 +92,7 @@ const getSingleDocument = (0, catchAsync_1.default)((req, res) => __awaiter(void
             data: null,
         });
     }
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const document = yield documents_service_1.documentsService.getSingleDocument(id, userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
@@ -111,7 +112,7 @@ const updateDocument = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
             data: null,
         });
     }
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const payload = req.body || {};
     const files = req.files;
     const documentFiles = [];
@@ -156,7 +157,7 @@ const deleteDocument = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
             data: null,
         });
     }
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const deletedDocument = yield documents_service_1.documentsService.deleteDocument(id, userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,

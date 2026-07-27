@@ -13,43 +13,53 @@ const documents_route_1 = __importDefault(require("../app/modules/documents/docu
 const cost_route_1 = __importDefault(require("../app/modules/cost/cost.route"));
 const report_route_1 = __importDefault(require("../app/modules/report/report.route"));
 const contact_route_1 = __importDefault(require("../app/modules/contact/contact.route"));
+const terms_route_1 = __importDefault(require("../app/modules/terms/terms.route"));
+const policy_route_1 = __importDefault(require("../app/modules/policy/policy.route"));
 const router = (0, express_1.Router)();
 const moduleRoutes = [
     {
-        path: '/auth',
+        path: "/auth",
         route: auth_route_1.default,
     },
     {
-        path: '/oauth',
+        path: "/oauth",
         route: oauth_route_1.default,
     },
     {
-        path: '/user',
+        path: "/user",
         route: user_route_1.default,
     },
     {
-        path: '/task',
+        path: "/task",
         route: task_route_1.default,
     },
     {
-        path: '/vehicle',
+        path: "/vehicle",
         route: vehicle_route_1.default,
     },
     {
-        path: '/documents',
+        path: "/documents",
         route: documents_route_1.default,
     },
     {
-        path: '/cost',
+        path: "/cost",
         route: cost_route_1.default,
     },
     {
-        path: '/report',
+        path: "/report",
         route: report_route_1.default,
     },
     {
-        path: '/contact',
+        path: "/contact",
         route: contact_route_1.default,
+    },
+    {
+        path: "/terms",
+        route: terms_route_1.default,
+    },
+    {
+        path: "/policy",
+        route: policy_route_1.default,
     },
 ];
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

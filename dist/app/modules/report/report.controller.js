@@ -17,6 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
 const report_service_1 = require("./report.service");
+const getParam = (value) => (Array.isArray(value) ? value[0] : value) || '';
 const createReport = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e;
     const body = req.body || {};
@@ -86,7 +87,7 @@ const getSingleReport = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
             data: null,
         });
     }
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const report = yield report_service_1.reportService.getSingleReport(id, userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
@@ -109,7 +110,7 @@ const updateReport = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
             data: null,
         });
     }
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const payload = req.body || {};
     const files = req.files;
     const uploadedScenePhotos = Array.isArray(files)
@@ -143,7 +144,7 @@ const deleteReport = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
             data: null,
         });
     }
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const deletedReport = yield report_service_1.reportService.deleteReport(id, userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
@@ -166,7 +167,7 @@ const getReportSummary = (0, catchAsync_1.default)((req, res) => __awaiter(void 
             data: null,
         });
     }
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const report = yield report_service_1.reportService.getSingleReport(id, userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,

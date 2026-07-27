@@ -19,7 +19,7 @@ const sendEmail = (to, subject, html) => __awaiter(void 0, void 0, void 0, funct
     const transporter = nodemailer_1.default.createTransport({
         host: config_1.default.email_host,
         port: Number(config_1.default.email_port),
-        secure: config_1.default.NODE_ENV === 'production',
+        secure: config_1.default.email_port === '465', // Use true for 465, false for other ports
         auth: {
             user: config_1.default.email_user,
             pass: config_1.default.email_pass,

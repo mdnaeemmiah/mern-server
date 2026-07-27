@@ -17,6 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
 const cost_service_1 = require("./cost.service");
+const getParam = (value) => (Array.isArray(value) ? value[0] : value) || '';
 const createCost = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e;
     const body = req.body || {};
@@ -70,7 +71,7 @@ const getSingleCost = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
             data: null,
         });
     }
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const cost = yield cost_service_1.costService.getSingleCost(id, userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
@@ -90,7 +91,7 @@ const updateCost = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
             data: null,
         });
     }
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const payload = req.body || {};
     const updatedCost = yield cost_service_1.costService.updateCost(id, userId, payload);
     (0, sendResponse_1.default)(res, {
@@ -111,7 +112,7 @@ const deleteCost = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
             data: null,
         });
     }
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const deletedCost = yield cost_service_1.costService.deleteCost(id, userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,

@@ -20,6 +20,7 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
 const AppError_1 = __importDefault(require("../../../errors/AppError"));
+const getParam = (value) => (Array.isArray(value) ? value[0] : value) || '';
 const getUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield user_service_1.userService.getUser();
     (0, sendResponse_1.default)(res, {
@@ -41,7 +42,7 @@ const getMe = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, 
 }));
 const getSingleUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(req.params);
-    const userId = req.params.userId;
+    const userId = getParam(req.params.userId);
     const result = yield user_service_1.userService.getSingleUser(userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
@@ -51,7 +52,7 @@ const getSingleUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
     });
 }));
 const updateUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const body = req.body;
     const file = req.file;
     if (file === null || file === void 0 ? void 0 : file.filename) {
@@ -66,7 +67,7 @@ const updateUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
     });
 }));
 exports.deleteUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     if (!mongoose_1.default.Types.ObjectId.isValid(id)) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Invalid user ID');
     }
@@ -82,7 +83,7 @@ exports.deleteUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
     });
 }));
 exports.changeStatus = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const { status } = req.body;
     if (!mongoose_1.default.Types.ObjectId.isValid(id)) {
         throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Invalid user ID');

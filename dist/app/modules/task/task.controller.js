@@ -17,6 +17,7 @@ const http_status_codes_1 = require("http-status-codes");
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse"));
 const task_service_1 = require("./task.service");
+const getParam = (value) => (Array.isArray(value) ? value[0] : value) || "";
 // Create a new task
 const createTask = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const validatedData = req.body;
@@ -40,7 +41,7 @@ const getAllTasks = (0, catchAsync_1.default)((_req, res) => __awaiter(void 0, v
 }));
 // Get single task by ID
 const getSingleTask = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const task = yield task_service_1.taskService.getSingleTask(id);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,
@@ -51,7 +52,7 @@ const getSingleTask = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 }));
 // Update task
 const updateTask = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const payload = req.body;
     const updatedTask = yield task_service_1.taskService.updateTask(id, payload);
     (0, sendResponse_1.default)(res, {
@@ -63,7 +64,7 @@ const updateTask = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
 }));
 // Delete task
 const deleteTask = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params;
+    const id = getParam(req.params.id);
     const deletedTask = yield task_service_1.taskService.deleteTask(id);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_codes_1.StatusCodes.OK,

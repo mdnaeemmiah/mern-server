@@ -33,9 +33,5 @@ const reportBodySchema = zod_1.z.object({
         .optional(),
     scenePhotos: zod_1.z.array(zod_1.z.string().trim().min(1)).optional(),
 });
-exports.ReportCreateValidationSchema = zod_1.z.object({
-    body: reportBodySchema,
-});
-exports.ReportUpdateValidationSchema = zod_1.z.object({
-    body: reportBodySchema,
-});
+exports.ReportCreateValidationSchema = reportBodySchema;
+exports.ReportUpdateValidationSchema = reportBodySchema;

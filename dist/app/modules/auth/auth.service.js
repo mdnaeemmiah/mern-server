@@ -29,14 +29,15 @@ const AppError_1 = __importDefault(require("../../../errors/AppError"));
 const sendEmail_1 = require("../../utils/sendEmail");
 const crypto_1 = __importDefault(require("crypto"));
 const https_1 = __importDefault(require("https"));
+const user_contant_1 = require("../user/user.contant");
 const httpsRequest = (url, options, body) => {
     return new Promise((resolve, reject) => {
         const request = https_1.default.request(url, options !== null && options !== void 0 ? options : {}, (response) => {
-            let rawData = '';
-            response.on('data', (chunk) => {
+            let rawData = "";
+            response.on("data", (chunk) => {
                 rawData += chunk;
             });
-            response.on('end', () => {
+            response.on("end", () => {
                 var _a;
                 const statusCode = (_a = response.statusCode) !== null && _a !== void 0 ? _a : 500;
                 if (statusCode < 200 || statusCode >= 300) {
@@ -47,12 +48,12 @@ const httpsRequest = (url, options, body) => {
                     resolve(parsed);
                 }
                 catch (_b) {
-                    reject(new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Invalid response received from Google OAuth'));
+                    reject(new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid response received from Google OAuth"));
                 }
             });
         });
-        request.on('error', () => {
-            reject(new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Failed to connect with Google OAuth services'));
+        request.on("error", () => {
+            reject(new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Failed to connect with Google OAuth services"));
         });
         if (body) {
             request.write(body);
@@ -64,63 +65,89 @@ const register = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     // checking if the user is exist
     const user = yield user_model_1.User.isUserExistsByCustomId(payload.email);
     if (user) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'This user is already exist!');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "This user is already exist!");
     }
     // generate verification code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    // Send verification email first
+    try {
+        yield (0, sendEmail_1.sendEmail)(payload.email, "Verify your email", `<p>Your verification code is: <h1>${verificationCode}</h1></p>`);
+    }
+    catch (error) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, "Failed to send verification email");
+    }
+    // If email is sent successfully, then save the user
     payload.verificationCode = verificationCode;
     payload.verificationCodeExpires = verificationCodeExpires;
     const newUser = new user_model_1.User(payload);
     yield newUser.save();
-    try {
-        yield (0, sendEmail_1.sendEmail)(newUser.email, 'Verify your email', `<p>Your verification code is: <h1>${verificationCode}</h1></p>`);
-    }
-    catch (error) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to send verification email');
-    }
     return {
-        message: 'Please check your email to verify your account.',
+        message: "Please check your email to verify your account.",
     };
 });
 const verifyEmail = (email, verificationCode) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield user_model_1.User.findOne({ email }).select('+verificationCode +verificationCodeExpires');
+    const user = yield user_model_1.User.findOne({ email }).select("+verificationCode +verificationCodeExpires");
     if (!user) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'User not found');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "User not found");
     }
-    if (!user.verificationCode ||
-        user.verificationCode !== verificationCode) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Invalid verification code');
+    if (!user.verificationCode || user.verificationCode !== verificationCode) {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid verification code");
     }
     if (!user.verificationCodeExpires ||
         user.verificationCodeExpires < new Date()) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Verification code has expired');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Verification code has expired");
     }
     user.isVerified = true;
     user.verificationCode = undefined;
     user.verificationCodeExpires = undefined;
     yield user.save();
     return {
-        message: 'Email verified successfully',
+        message: "Email verified successfully",
     };
 });
 const login = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     // checking if the user is exist
-    const user = yield user_model_1.User.isUserExistsByCustomId(payload.email);
+    let user = yield user_model_1.User.isUserExistsByCustomId(payload.email);
+    const isConfiguredAdmin = payload.email === config_1.default.admin_email &&
+        payload.password === config_1.default.admin_password;
+    if (isConfiguredAdmin) {
+        if (!user) {
+            yield user_model_1.User.create({
+                name: "Admin",
+                email: config_1.default.admin_email,
+                password: config_1.default.admin_password,
+                role: user_contant_1.USER_ROLE.admin,
+                isVerified: true,
+                needsPasswordChange: false,
+            });
+        }
+        else {
+            const hasConfiguredPassword = yield user_model_1.User.isPasswordMatched(config_1.default.admin_password, user.password);
+            user.role = user_contant_1.USER_ROLE.admin;
+            user.isVerified = true;
+            user.needsPasswordChange = false;
+            if (!hasConfiguredPassword) {
+                user.password = config_1.default.admin_password;
+            }
+            yield user.save();
+        }
+        user = yield user_model_1.User.isUserExistsByCustomId(payload.email);
+    }
     if (!user) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'This user is not found !');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "This user is not found !");
     }
     if (!user.isVerified) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Please verify your email first!');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, "Please verify your email first!");
     }
     // checking if the user is blocked
     const userStatus = user === null || user === void 0 ? void 0 : user.status;
-    if (userStatus === 'blocked') {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'This user is blocked ! !');
+    if (userStatus === "blocked") {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, "This user is blocked ! !");
     }
     // checking if the password is correct
     if (!(yield user_model_1.User.isPasswordMatched(payload === null || payload === void 0 ? void 0 : payload.password, user === null || user === void 0 ? void 0 : user.password)))
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Password do not matched');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, "Password do not matched");
     // create token and sent to the  client
     const jwtPayload = {
         role: user.role,
@@ -138,16 +165,16 @@ const changePassword = (userData, payload) => __awaiter(void 0, void 0, void 0, 
     // checking if the user is exist
     const user = yield user_model_1.User.isUserExistsByCustomId(userData.userId);
     if (!user) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'This user is not found !');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "This user is not found !");
     }
     // checking if the user is blocked
     const userStatus = user === null || user === void 0 ? void 0 : user.status;
-    if (userStatus === 'blocked') {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'This user is blocked ! !');
+    if (userStatus === "blocked") {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, "This user is blocked ! !");
     }
     //checking if the password is correct
     if (!(yield user_model_1.User.isPasswordMatched(payload.oldPassword, user === null || user === void 0 ? void 0 : user.password)))
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'Password do not matched');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, "Password do not matched");
     //hash new password
     const newHashedPassword = yield bcrypt_1.default.hash(payload.newPassword, Number(config_1.default.bcrypt_salt_rounds));
     yield user_model_1.User.findOneAndUpdate({
@@ -168,16 +195,16 @@ const refreshToken = (token) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield user_model_1.User.isUserExistsByCustomId(email);
     // console.log(decoded);
     if (!user) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'This user is not found !');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "This user is not found !");
     }
     // checking if the user is blocked
     const userStatus = user === null || user === void 0 ? void 0 : user.status;
-    if (userStatus === 'blocked') {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'This user is blocked ! !');
+    if (userStatus === "blocked") {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, "This user is blocked ! !");
     }
     if (user.passwordChangedAt &&
         user_model_1.User.isJWTIssuedBeforePasswordChanged(user.passwordChangedAt, iat)) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.UNAUTHORIZED, 'You are not authorized !');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.UNAUTHORIZED, "You are not authorized !");
     }
     const jwtPayload = {
         email: user.email,
@@ -191,20 +218,20 @@ const refreshToken = (token) => __awaiter(void 0, void 0, void 0, function* () {
 const forgetPassword = (email) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield user_model_1.User.findOne({ email });
     if (!user) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, 'User not found');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.NOT_FOUND, "User not found");
     }
     const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
     user.passwordResetToken = resetToken;
     user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     yield user.save();
     try {
-        yield (0, sendEmail_1.sendEmail)(user.email, 'Password Reset', `<p>Your password reset code is: <h1>${resetToken}</h1></p>`);
+        yield (0, sendEmail_1.sendEmail)(user.email, "Password Reset", `<p>Your password reset code is: <h1>${resetToken}</h1></p>`);
     }
     catch (error) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to send password reset email');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, "Failed to send password reset email");
     }
     return {
-        message: 'Password reset code sent to your email',
+        message: "Password reset code sent to your email",
     };
 });
 const resetPassword = (payload) => __awaiter(void 0, void 0, void 0, function* () {
@@ -215,7 +242,7 @@ const resetPassword = (payload) => __awaiter(void 0, void 0, void 0, function* (
         passwordResetExpires: { $gt: new Date() },
     });
     if (!user) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Invalid or expired token');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid or expired token");
     }
     user.password = newPassword;
     user.passwordResetToken = undefined;
@@ -224,7 +251,7 @@ const resetPassword = (payload) => __awaiter(void 0, void 0, void 0, function* (
     user.passwordChangedAt = new Date();
     yield user.save();
     return {
-        message: 'Password reset successfully',
+        message: "Password reset successfully",
     };
 });
 const codeVerify = (payload) => __awaiter(void 0, void 0, void 0, function* () {
@@ -235,25 +262,25 @@ const codeVerify = (payload) => __awaiter(void 0, void 0, void 0, function* () {
         passwordResetExpires: { $gt: new Date() },
     });
     if (!user) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Invalid or expired code');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Invalid or expired code");
     }
     return {
-        message: 'Code verified successfully',
+        message: "Code verified successfully",
     };
 });
 const getGoogleAuthUrl = () => {
     if (!config_1.default.google_client_id ||
         !config_1.default.google_client_secret ||
         !config_1.default.google_callback_url) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, 'Google OAuth environment variables are missing');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, "Google OAuth environment variables are missing");
     }
     const params = new URLSearchParams({
         client_id: config_1.default.google_client_id,
         redirect_uri: config_1.default.google_callback_url,
-        response_type: 'code',
-        scope: 'openid email profile',
-        access_type: 'offline',
-        prompt: 'consent',
+        response_type: "code",
+        scope: "openid email profile",
+        access_type: "offline",
+        prompt: "consent",
     });
     return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 };
@@ -262,46 +289,46 @@ const googleCallback = (code) => __awaiter(void 0, void 0, void 0, function* () 
     if (!config_1.default.google_client_id ||
         !config_1.default.google_client_secret ||
         !config_1.default.google_callback_url) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, 'Google OAuth environment variables are missing');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR, "Google OAuth environment variables are missing");
     }
     const tokenRequestBody = new URLSearchParams({
         code,
         client_id: config_1.default.google_client_id,
         client_secret: config_1.default.google_client_secret,
         redirect_uri: config_1.default.google_callback_url,
-        grant_type: 'authorization_code',
+        grant_type: "authorization_code",
     }).toString();
-    const tokenResponse = yield httpsRequest('https://oauth2.googleapis.com/token', {
-        method: 'POST',
+    const tokenResponse = yield httpsRequest("https://oauth2.googleapis.com/token", {
+        method: "POST",
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': Buffer.byteLength(tokenRequestBody),
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Length": Buffer.byteLength(tokenRequestBody),
         },
     }, tokenRequestBody);
-    const googleUser = yield httpsRequest('https://www.googleapis.com/oauth2/v3/userinfo', {
-        method: 'GET',
+    const googleUser = yield httpsRequest("https://www.googleapis.com/oauth2/v3/userinfo", {
+        method: "GET",
         headers: {
             Authorization: `Bearer ${tokenResponse.access_token}`,
         },
     });
     if (!googleUser.email) {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Google account email not found in OAuth response');
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, "Google account email not found in OAuth response");
     }
-    let user = yield user_model_1.User.findOne({ email: googleUser.email }).select('+password');
+    let user = yield user_model_1.User.findOne({ email: googleUser.email }).select("+password");
     if (!user) {
-        const generatedPassword = crypto_1.default.randomBytes(32).toString('hex');
+        const generatedPassword = crypto_1.default.randomBytes(32).toString("hex");
         user = yield user_model_1.User.create({
-            name: googleUser.name || googleUser.email.split('@')[0],
+            name: googleUser.name || googleUser.email.split("@")[0],
             email: googleUser.email,
             password: generatedPassword,
             isVerified: (_a = googleUser.email_verified) !== null && _a !== void 0 ? _a : true,
             needsPasswordChange: false,
             profileImage: googleUser.picture,
-            role: 'user',
+            role: "user",
         });
     }
-    if (user.status === 'blocked') {
-        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, 'This user is blocked ! !');
+    if (user.status === "blocked") {
+        throw new AppError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, "This user is blocked ! !");
     }
     const jwtPayload = {
         role: user.role,
